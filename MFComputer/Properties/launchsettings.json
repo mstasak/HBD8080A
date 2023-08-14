@@ -1,0 +1,10 @@
+﻿{
+    "profiles": {
+      "MFComputer (Package)": {
+        "commandName": "MsixPackage"
+      },
+      "MFComputer (Unpackaged)": {
+        "commandName": "Project"
+      }
+    }
+}
