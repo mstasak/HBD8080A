@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Bson;
 using Windows.Data.Text;
+using Windows.UI.ViewManagement.Core;
 
 namespace MFComputer.Hardware.Computer;
 internal class Cpu8080A
@@ -61,10 +62,31 @@ internal class Cpu8080A
     {
         return (highByte(w), lowByte(w));
     }
-    public ushort bc { get => makeWord(b, c); set => (b, c) = splitWord(value); }
-    public ushort de { get => makeWord(d, e); set => (d, e) = splitWord(value); }
-    public ushort hl { get => makeWord(h, l); set => (h, l) = splitWord(value); }
-    public ushort aflags { get => makeWord(a, flags); set => (a, flags) = splitWord(value); }
+    public byte m
+    {
+        get => memory[hl];
+        set {
+            if (!isROM(hl)) {
+                memory[hl] = value;
+            }
+        }
+    }
+    public ushort bc
+    {
+        get => makeWord(b, c); set => (b, c) = splitWord(value);
+    }
+    public ushort de
+    {
+        get => makeWord(d, e); set => (d, e) = splitWord(value);
+    }
+    public ushort hl
+    {
+        get => makeWord(h, l); set => (h, l) = splitWord(value);
+    }
+    public ushort aflags
+    {
+        get => makeWord(a, flags); set => (a, flags) = splitWord(value);
+    }
 
     void Run(ushort? address = 0x100)
     {
@@ -79,7 +101,7 @@ internal class Cpu8080A
         }
     }
 
-    void DoInstruction()
+    int DoInstruction()
     {
         //byte opCode = ram[pc++];
         var opcode = fetchByte();
@@ -104,24 +126,23 @@ internal class Cpu8080A
                 cycles = 7;
                 break; //stax b
             case 0x03:
-                unchecked
-                {
-                    bc++;
-                }
+                unchecked { bc++; }
                 cycles = 5;
                 break; //inx b
             case 0x04:
-                unchecked
-                {
-                    b++;
-                }
+                unchecked { b++; }
+                //standard zero, sign, parity handling
+                setFlagsZPS(b);
+                //also set ac on right nibl overflow
+                flags = (byte)((flags & ~auxcarryflag) | ((b & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr b
             case 0x05:
-                unchecked
-                {
-                    b--;
-                }
+                unchecked { b--; }
+                //standard zero, sign, parity handling
+                setFlagsZPS(b);
+                //also set ac on right nibl underflow CONCERN: borrows may not set ac as expected - maybe set to 1 then blear when borrow occurs? find a test suite!
+                flags = (byte)((flags & ~auxcarryflag) | (((b & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr b
             case 0x06:
@@ -138,15 +159,8 @@ internal class Cpu8080A
             case 0x08: break;
             case 0x09:
                 iTmp = hl + bc;
-                hl = (ushort)(iTmp & 0xffff); //use unchecked?
-                if (iTmp > 0xffff)
-                {
-                    flags = (byte)(flags | carryflag);
-                }
-                else
-                {
-                    flags = (byte)(flags & ~carryflag);
-                }
+                hl = unchecked((ushort)iTmp);
+                flags = (byte)((flags & ~carryflag) | ((iTmp > 0xffff) ? carryflag : 0));
                 cycles = 10;
                 break; //dad b
             case 0x0a:
@@ -154,24 +168,19 @@ internal class Cpu8080A
                 cycles = 7;
                 break; //ldax b
             case 0x0b:
-                unchecked
-                {
-                    bc--;
-                }
+                unchecked { bc--; }
                 cycles = 5;
                 break; //dcx b
             case 0x0c:
-                unchecked
-                {
-                    c++;
-                }
+                unchecked { c++; }
+                setFlagsZPS(c);
+                flags = (byte)((flags & ~auxcarryflag) | ((c & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr c
             case 0x0d:
-                unchecked
-                {
-                    c--;
-                }
+                unchecked { c--; }
+                setFlagsZPS(c);
+                flags = (byte)((flags & ~auxcarryflag) | (((c & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr c
             case 0x0e:
@@ -197,10 +206,14 @@ internal class Cpu8080A
                 break; //inx d
             case 0x14:
                 unchecked { d++; }
+                setFlagsZPS(d);
+                flags = (byte)((flags & ~auxcarryflag) | ((d & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr d
             case 0x15:
                 unchecked { d--; }
+                setFlagsZPS(d);
+                flags = (byte)((flags & ~auxcarryflag) | (((d & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr d
             case 0x16:
@@ -216,12 +229,8 @@ internal class Cpu8080A
             case 0x18: break;
             case 0x19:
                 iTmp = hl + de;
-                hl = lowWord(iTmp);
-                if (iTmp > 0xffff) {
-                    flags = (byte)(flags | carryflag);
-                } else {
-                    flags = (byte)(flags & ~carryflag);
-                }
+                hl = unchecked((ushort)iTmp);
+                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
                 cycles = 10;
                 break; //dad d
             case 0x1a:
@@ -234,10 +243,14 @@ internal class Cpu8080A
                 break; //dcx d
             case 0x1c:
                 unchecked { e++; }
+                setFlagsZPS(e);
+                flags = (byte)((flags & ~auxcarryflag) | ((e & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr e
             case 0x1d:
                 unchecked { e--; }
+                setFlagsZPS(e);
+                flags = (byte)((flags & ~auxcarryflag) | (((e & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr e
             case 0x1e:
@@ -267,662 +280,1027 @@ internal class Cpu8080A
                 break; //inx h
             case 0x24:
                 unchecked { h++; }
+                setFlagsZPS(h);
+                flags = (byte)((flags & ~auxcarryflag) | ((h & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr h
             case 0x25:
                 unchecked { h--; }
+                setFlagsZPS(h);
+                flags = (byte)((flags & ~auxcarryflag) | (((h & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr h
             case 0x26:
-                putH(fetchByte());
+                h = fetchByte();
                 cycles = 7;
                 break; //mvi h,d8
             case 0x27:
                 flagsTmp = flags;
                 bTmp = a;
-                if (((bTmp & 0x0f) > 9) || ((flagsTmp & auxcarryflag) != 0))
-                {
-                    flagsTmp = (flagsTmp & (~auxcarryflag)) | (((bTmp & 0x0f) > 9) ? auxcarryflag : 0);
+                if (((bTmp & 0x0f) > 9) || ((flagsTmp & auxcarryflag) != 0)) {
+                    flagsTmp = (byte)((flagsTmp & ~auxcarryflag) | (((bTmp & 0x0f) > 9) ? auxcarryflag : 0));
                     bTmp = (byte)(bTmp + 6);
+                } else {
+                    flagsTmp = (byte)(flagsTmp & (~auxcarryflag));
                 }
-                else
-                {
-                    flagsTmp = flagsTmp & (~auxcarryflag);
-                }
-                if (((bTmp & 0xf0) > 0x90) || (flagsTmp & carryflag))
-                {
-                    flagsTmp = (flagsTmp & (~carryflag)) | (((bTmp & 0xf0) > 0x90) ? carryflag : 0);
+                if (((bTmp & 0xf0) > 0x90) || ((flagsTmp & carryflag) != 0)) {
+                    flagsTmp = (byte)((flagsTmp & (~carryflag)) | (((bTmp & 0xf0) > 0x90) ? carryflag : 0));
                     bTmp = (byte)(bTmp + 0x60);
+                } else {
+                    flagsTmp = (byte)(flagsTmp & (~carryflag));
                 }
-                else
-                {
-                    flagsTmp = flagsTmp & (~carryflag);
-                }
-                putFlags(flagsTmp);
-                putA(bTmp);
+                flags = flagsTmp;
+                a = bTmp;
                 setFlagsZPS(bTmp);
                 cycles = 4;
                 break; //daa
             case 0x28: break;
             case 0x29:
-                iTmp = getHL() + getHL();
-                putHL((WORD)iTmp);
-                if (iTmp & 0xffff0000)
-                {
-                    putFlags(getFlags() | (carryflag));
-                }
-                else
-                {
-                    putFlags(getFlags() & (~carryflag));
-                }
+                iTmp = hl + hl;
+                hl = unchecked((ushort)iTmp);
+                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
                 cycles = 10;
                 break; //dad h
             case 0x2a:
                 wTmp = fetchWord();
-                wTmp = (memory[wTmp++]) | (memory[wTmp] << 8);
-                putHL(wTmp);
+                wTmp = (ushort)((memory[wTmp++]) | (memory[wTmp] << 8));
+                hl = wTmp;
                 cycles = 16;
                 break; //lhld a16
             case 0x2b:
-                putHL(getHL() - 1);
+                unchecked { hl--; }
                 cycles = 5;
                 break; //dcx h
             case 0x2c:
-                inr_mac(L);
+                unchecked { l++; }
+                setFlagsZPS(l);
+                flags = (byte)((flags & ~auxcarryflag) | ((l & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr l
             case 0x2d:
-                dcr_mac(L);
+                unchecked { l--; }
+                setFlagsZPS(l);
+                flags = (byte)((flags & ~auxcarryflag) | (((l & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr l
             case 0x2e:
-                putL(fetchByte());
+                l = fetchByte();
                 cycles = 7;
                 break; //mvi l,d8
             case 0x2f:
-                putA(~getA());
+                a = (byte)~a;
                 //cycles = 4;
                 break; //cma
             case 0x30: break;
             case 0x31:
-                putSP(fetchWord());
+                sp = fetchWord();
                 cycles = 10;
                 break; //lxi sp
             case 0x32:
-                memory[fetchWord()] = getA();
+                memory[fetchWord()] = a;
                 cycles = 13;
                 break; //sta a16
             case 0x33:
-                putSP(getSP() + 1);
+                unchecked { sp++; }
                 cycles = 5;
                 break; //inx sp
             case 0x34:
-                inr_mac(M);
+                unchecked { m++; }
+                setFlagsZPS(m);
+                flags = (byte)((flags & ~auxcarryflag) | ((m & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 10;
                 break; //inr m
             case 0x35:
-                dcr_mac(M);
+                unchecked { m--; }
+                setFlagsZPS(m);
+                flags = (byte)((flags & ~auxcarryflag) | (((m & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 10;
                 break; //dcr m
             case 0x36:
-                memory[getHL()] = fetchByte();
+                memory[hl] = fetchByte();
                 cycles = 10;
                 break; //mvi m,d8
             case 0x37:
-                putFlags(getFlags() | carryflag);
+                flags = (byte)(flags | carryflag);
                 //cycles = 4;
                 break; //STC
             case 0x38: break;
             case 0x39:
-                iTmp = (int)getHL() + (int)getSP();
-                putHL((WORD)iTmp);
-                if (iTmp & 0xffff0000)
-                {
-                    putFlags(getFlags() | (carryflag));
-                }
-                else
-                {
-                    putFlags(getFlags() & (~carryflag));
-                }
+                iTmp = hl + sp;
+                hl = unchecked((ushort)iTmp);
+                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
                 cycles = 10;
                 break; //dad sp
             case 0x3a:
-                putA(memory[fetchWord()]);
+                a = memory[fetchWord()];
                 cycles = 13;
                 break; //lda a16
             case 0x3b:
-                putSP(getSP() - 1);
+                unchecked { sp--; }
                 cycles = 5;
                 break; //dcx sp
             case 0x3c:
-                inr_mac(A);
+                unchecked { a++; }
+                setFlagsZPS(a);
+                flags = (byte)((flags & ~auxcarryflag) | ((a & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr a
             case 0x3d:
-                dcr_mac(A);
+                unchecked { a--; }
+                setFlagsZPS(a);
+                flags = (byte)((flags & ~auxcarryflag) | (((a & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr a
             case 0x3e:
-                putA(fetchByte());
+                a = fetchByte();
                 cycles = 7;
                 break; //mvi a,d8
             case 0x3f:
-                putFlags(getFlags() ^ carryflag);
+                flags = (byte)(flags ^ carryflag);
                 break; //CMC
             case 0x40:
                 cycles = 5;
                 break; //mov b,b
             case 0x41:
-                mov_mac(B, C);
+                b = c;
                 cycles = 5;
                 break; //mov b,c
             case 0x42:
-                mov_mac(B, D);
+                b = d;
                 cycles = 5;
                 break; //mov b,d
             case 0x43:
-                mov_mac(B, E);
+                b = e;
                 cycles = 5;
                 break; //mov b,e
             case 0x44:
-                mov_mac(B, H);
+                b = h;
                 cycles = 5;
                 break; //mov b,h
             case 0x45:
-                mov_mac(B, L);
+                b = l;
                 cycles = 5;
                 break; //mov b,l
             case 0x46:
-                mov_mac_from_m(B);
+                b = m;
                 cycles = 7;
                 break; //mov b,m
             case 0x47:
-                mov_mac(B, A);
+                b = a;
                 cycles = 5;
                 break; //mov b,a
             case 0x48:
-                mov_mac(C, B);
+                c = b;
                 cycles = 5;
                 break; //mov c,b
             case 0x49:
                 cycles = 5;
                 break; //mov c,c
             case 0x4a:
-                mov_mac(C, D);
+                c = d;
                 cycles = 5;
                 break; //mov c,d
             case 0x4b:
-                mov_mac(C, E);
+                c = e;
                 cycles = 5;
                 break; //mov c,e
             case 0x4c:
-                mov_mac(C, H);
+                c = h;
                 cycles = 5;
                 break; //mov c,h
             case 0x4d:
-                mov_mac(C, L);
+                c = l;
                 cycles = 5;
                 break; //mov c,l
             case 0x4e:
-                mov_mac_from_m(C);
+                c = m;
                 cycles = 7;
                 break; //mov c,m
             case 0x4f:
-                mov_mac(C, A);
+                c = a;
                 cycles = 5;
                 break; //mov c,a
             case 0x50:
-                mov_mac(D, B);
+                d = b;
                 cycles = 5;
                 break; //mov d,b
             case 0x51:
-                mov_mac(D, C);
+                d = c;
                 cycles = 5;
                 break; //mov d,c
             case 0x52:
                 cycles = 5;
                 break; //mov d,d
             case 0x53:
-                mov_mac(D, E);
+                d = e;
                 cycles = 5;
                 break; //mov d,e
             case 0x54:
-                mov_mac(D, H);
+                d = h;
                 cycles = 5;
                 break; //mov d,h
             case 0x55:
-                mov_mac(D, L);
+                d = l;
                 cycles = 5;
                 break; //mov d,l
             case 0x56:
-                mov_mac(D, M);
+                d = m;
                 cycles = 7;
                 break; //mov d,m
             case 0x57:
-                mov_mac(D, A);
+                d = a;
                 cycles = 5;
                 break; //mov d,a
             case 0x58:
-                mov_mac(E, B);
+                e = b;
                 cycles = 5;
                 break; //mov e,b
             case 0x59:
-                mov_mac(E, C);
+                e = c;
                 cycles = 5;
                 break; //mov e,c
             case 0x5a:
-                mov_mac(E, D);
+                e = d;
                 cycles = 5;
                 break; //mov e,d
             case 0x5b:
                 cycles = 5;
                 break; //mov e,e
             case 0x5c:
-                mov_mac(E, H);
+                e = h;
                 cycles = 5;
                 break; //mov e,h
             case 0x5d:
-                mov_mac(E, L);
+                e = l;
                 cycles = 5;
                 break; //mov e,l
             case 0x5e:
-                mov_mac(E, M);
+                e = m;
                 cycles = 7;
                 break; //mov e,m
             case 0x5f:
-                mov_mac(E, A);
+                e = a;
                 cycles = 5;
                 break; //mov e,a
             case 0x60:
-                mov_mac(H, B);
+                h = b;
                 cycles = 5;
                 break; //mov h,b
             case 0x61:
-                mov_mac(H, C);
+                h = c;
                 cycles = 5;
                 break; //mov h,c
             case 0x62:
-                mov_mac(H, D);
+                h = d;
                 cycles = 5;
                 break; //mov h,d
             case 0x63:
-                mov_mac(H, E);
+                h = e;
                 cycles = 5;
                 break; //mov h,e
             case 0x64:
                 cycles = 5;
                 break; //mov h,h
             case 0x65:
-                mov_mac(H, L);
+                h = l;
                 cycles = 5;
                 break; //mov h,l
             case 0x66:
-                mov_mac(H, M);
+                h = m;
                 cycles = 7;
                 break; //mov h,m
             case 0x67:
-                mov_mac(H, A);
+                h = a;
                 cycles = 5;
                 break; //mov h,a
             case 0x68:
-                mov_mac(L, B);
+                l = b;
                 cycles = 5;
                 break; //mov l,b
             case 0x69:
-                mov_mac(L, C);
+                l = c;
                 cycles = 5;
                 break; //mov l,c
             case 0x6a:
-                mov_mac(L, D);
+                l = d;
                 cycles = 5;
                 break; //mov l,d
             case 0x6b:
-                mov_mac(L, E);
+                l = e;
                 cycles = 5;
                 break; //mov l,e
             case 0x6c:
-                mov_mac(L, H);
+                l = h;
                 cycles = 5;
                 break; //mov l,h
             case 0x6d:
                 cycles = 5;
                 break; //mov l,l
             case 0x6e:
-                mov_mac(L, M);
+                l = m;
                 cycles = 7;
                 break; //mov l,m
             case 0x6f:
-                mov_mac(L, A);
+                l = a;
                 cycles = 5;
                 break; //mov l,a
             case 0x70:
-                mov_mac(M, B);
+                m = b;
                 cycles = 7;
                 break; //mov m,b
             case 0x71:
-                mov_mac(M, C);
+                m = c;
                 cycles = 7;
                 break; //mov m,c
             case 0x72:
-                mov_mac(M, D);
+                m = d;
                 cycles = 7;
                 break; //mov m,d
             case 0x73:
-                mov_mac(M, E);
+                m = e;
                 cycles = 7;
                 break; //mov m,e
             case 0x74:
-                mov_mac(M, H);
+                m = h;
                 cycles = 7;
                 break; //mov m,h
             case 0x75:
-                mov_mac(M, L);
+                m = l;
                 cycles = 7;
                 break; //mov m,l
             case 0x76:
                 cycles = 7;
+                running = false;
                 break; //hlt
             case 0x77:
-                mov_mac(M, A);
+                m = a;
                 cycles = 7;
                 break; //mov m,a
             case 0x78:
-                mov_mac(A, B);
+                a = b;
                 cycles = 5;
                 break; //mov a,b
             case 0x79:
-                mov_mac(A, C);
+                a = c;
                 cycles = 5;
                 break; //mov a,c
             case 0x7a:
-                mov_mac(A, D);
+                a = d;
                 cycles = 5;
                 break; //mov a,d
             case 0x7b:
-                mov_mac(A, E);
+                a = e;
                 cycles = 5;
                 break; //mov a,e
             case 0x7c:
-                mov_mac(A, H);
+                a = h;
                 cycles = 5;
                 break; //mov a,h
             case 0x7d:
-                mov_mac(A, L);
+                a = l;
                 cycles = 5;
                 break; //mov a,l
             case 0x7e:
-                mov_mac(A, M);
+                a = m;
                 cycles = 7;
                 break; //mov a,m
             case 0x7f:
                 cycles = 5;
                 break; //mov a,a
             case 0x80:
-                add_mac(B);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + b);
+                newAuxCarry = (a & 0x0f) + (b & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add b
             case 0x81:
-                add_mac(C);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + c);
+                newAuxCarry = (a & 0x0f) + (c & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add c
             case 0x82:
-                add_mac(D);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + d);
+                newAuxCarry = (a & 0x0f) + (d & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add d
             case 0x83:
-                add_mac(E);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + e);
+                newAuxCarry = (a & 0x0f) + (e & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add e
             case 0x84:
-                add_mac(H);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + h);
+                newAuxCarry = (a & 0x0f) + (h & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add h
             case 0x85:
-                add_mac(L);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + l);
+                newAuxCarry = (a & 0x0f) + (l & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add l
             case 0x86:
-                add_mac(M);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + m);
+                newAuxCarry = (a & 0x0f) + (m & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //add m
             case 0x87:
-                add_mac(A);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + a);
+                newAuxCarry = (a & 0x0f) + (a & 0x0f) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add a
             case 0x88:
-                adc_mac(B);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + b + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (b & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc b
             case 0x89:
-                adc_mac(C);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + c + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (c & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc c
             case 0x8a:
-                adc_mac(D);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + d + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (d & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc d
             case 0x8b:
-                adc_mac(E);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + e + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (e & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc e
             case 0x8c:
-                adc_mac(H);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + h + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (h & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc h
             case 0x8d:
-                adc_mac(L);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + l + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (l & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc l
             case 0x8e:
-                adc_mac(M);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + m + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (m & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //adc m
             case 0x8f:
-                adc_mac(A);
+                bTmp = a;
+                wTmp = (ushort)(bTmp + a + (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) + (a & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc a
             case 0x90:
-                sub_mac(B);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - b);
+                newAuxCarry = (a & 0x0f) - (b & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub b
             case 0x91:
-                sub_mac(C);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - c);
+                newAuxCarry = (a & 0x0f) - (c & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub c
             case 0x92:
-                sub_mac(D);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - d);
+                newAuxCarry = (a & 0x0f) - (d & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub d
             case 0x93:
-                sub_mac(E);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - e);
+                newAuxCarry = (a & 0x0f) - (e & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub e
             case 0x94:
-                sub_mac(H);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - h);
+                newAuxCarry = (a & 0x0f) - (h & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub h
             case 0x95:
-                sub_mac(L);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - l);
+                newAuxCarry = (a & 0x0f) - (l & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub l
             case 0x96:
-                sub_mac(M);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - m);
+                newAuxCarry = (a & 0x0f) - (m & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sub m
             case 0x97:
-                sub_mac(A);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - a);
+                newAuxCarry = (a & 0x0f) - (a & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub a
             case 0x98:
-                sbb_mac(B);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - b - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (b & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb b
             case 0x99:
-                sbb_mac(C);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - c - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (c & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb c
             case 0x9a:
-                sbb_mac(D);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - d - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (d & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb d
             case 0x9b:
-                sbb_mac(E);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - e - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (e & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb e
             case 0x9c:
-                sbb_mac(H);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - h - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (h & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb h
             case 0x9d:
-                sbb_mac(L);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - l - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (l & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb l
             case 0x9e:
-                sbb_mac(M);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - m - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (m & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sbb m
             case 0x9f:
-                sbb_mac(A);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - a - (((flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (a & 0x0f) - (a & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                a = unchecked((byte)wTmp);
+                setFlagsZPS(a);
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb a
             case 0xa0:
-                ana_mac(B);
+                a = (byte)(a & b);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana b
             case 0xa1:
-                ana_mac(C);
+                a = (byte)(a & c);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana c
             case 0xa2:
-                ana_mac(D);
+                a = (byte)(a & d);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana d
             case 0xa3:
-                ana_mac(E);
+                a = (byte)(a & e);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana e
             case 0xa4:
-                ana_mac(H);
+                a = (byte)(a & h);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana h
             case 0xa5:
-                ana_mac(L);
+                a = (byte)(a & l);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana l
             case 0xa6:
-                ana_mac(M);
+                a = (byte)(a & m);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //ana m
             case 0xa7:
-                ana_mac(A);
+                a = (byte)(a & a);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana a
             case 0xa8:
-                xra_mac(B);
+                a = (byte)(a ^ b);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra b
             case 0xa9:
-                xra_mac(C);
+                a = (byte)(a ^ c);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra c
             case 0xaa:
-                xra_mac(D);
+                a = (byte)(a ^ d);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra d
             case 0xab:
-                xra_mac(E);
+                a = (byte)(a ^ e);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra e
             case 0xac:
-                xra_mac(H);
+                a = (byte)(a ^ h);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra h
             case 0xad:
-                xra_mac(L);
+                a = (byte)(a ^ l);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra l
             case 0xae:
-                xra_mac(M);
+                a = (byte)(a ^ m);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //xra m
             case 0xaf:
-                xra_mac(A);
+                a = (byte)(a ^ a);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra a
             case 0xb0:
-                ora_mac(B);
+                a = (byte)(a | b);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora b
             case 0xb1:
-                ora_mac(C);
+                a = (byte)(a | c);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora c
             case 0xb2:
-                ora_mac(D);
+                a = (byte)(a | d);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora d
             case 0xb3:
-                ora_mac(E);
+                a = (byte)(a | e);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora e
             case 0xb4:
-                ora_mac(H);
+                a = (byte)(a | h);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora h
             case 0xb5:
-                ora_mac(L);
+                a = (byte)(a | l);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora l
             case 0xb6:
-                ora_mac(M);
+                a = (byte)(a | m);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //ora m
             case 0xb7:
-                ora_mac(a);
+                a = (byte)(a | a);
+                setFlagsZPS(a);
+                flags = (byte)(flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora a
             case 0xb8:
-                cmp_mac(b);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - b);
+                newAuxCarry = (a & 0x0f) - (b & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp b
             case 0xb9:
-                cmp_mac(c);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - c);
+                newAuxCarry = (a & 0x0f) - (c & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp c
             case 0xba:
-                cmp_mac(d);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - d);
+                newAuxCarry = (a & 0x0f) - (d & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp d
             case 0xbb:
-                cmp_mac(e);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - e);
+                newAuxCarry = (a & 0x0f) - (e & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp e
             case 0xbc:
-                cmp_mac(h);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - h);
+                newAuxCarry = (a & 0x0f) - (h & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp h
             case 0xbd:
-                cmp_mac(l);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - l);
+                newAuxCarry = (a & 0x0f) - (l & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp l
             case 0xbe:
-                cmp_mac(M);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - m);
+                newAuxCarry = (a & 0x0f) - (m & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //cmp m
             case 0xbf:
-                cmp_mac(A);
+                bTmp = a;
+                wTmp = (ushort)(bTmp - a);
+                newAuxCarry = (a & 0x0f) - (a & 0x0f) < 0;
+                newCarry = (wTmp & 0xff00) != 0;
+                //a = unchecked((byte)wTmp);
+                setFlagsZPS(unchecked((byte)wTmp));
+                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                               | (newCarry ? carryflag : 0)
+                               | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp a
             case 0xc0:
                 cycles = 5;
-                if (!(getFlags() & zeroflag))
+                if ((flags & zeroflag) == 0)
                 {
-                    putIP(popWord());
+                    pc = popWord();
                     cycles = 11;
                 }
                 break; //rnz
             case 0xc1:
-                putBC(popWord());
+                bc = popWord();
                 cycles = 10;
                 break; //pop b
             case 0xc2:
@@ -1283,43 +1661,11 @@ internal class Cpu8080A
                 break; //rst 7
             default: break;
         }
+        return cycles;
     }
-
-    void putA(byte newValue)
-    {
-        a = newValue;
-    }
-    void putFlags(byte newValue)
-    {
-        flags = newValue;
-    }
-    void putB(byte newValue)
-    {
-        b = newValue;
-    }
-    void putC(byte newValue)
-    {
-        c = newValue;
-    }
-    void putD(byte newValue)
-    {
-        d = newValue;
-    }
-    void putE(byte newValue)
-    {
-        e = newValue;
-    }
-    void putH(byte newValue)
-    {
-        h = newValue;
-    }
-    void putL(byte newValue)
-    {
-        l = newValue;
-    }
-
 
     /*
+
     void CPU::jumpTo(const WORD address) {
     this->putIP(address);
     }
@@ -1352,15 +1698,6 @@ internal class Cpu8080A
     return this->breakpointsEnabled;
     }
 
-    bool CPU::parityEven(WORD d)
-    {
-    auto rslt{ true };
-    while (d != 0) {
-        if (d & 1) rslt = !rslt;
-        d = d >> 1;
-    }
-    return rslt;
-    }
     */
     byte fetchByte()
     {
@@ -1376,6 +1713,20 @@ internal class Cpu8080A
     }
 
     /*
+    void inx(ref ushort w)
+    {
+        unchecked {
+            w++;    
+        }
+        //flags: none
+    }
+    void dcx(ref ushort w)
+    {
+        unchecked {
+            w--;    
+        }
+        //flags: none
+    }
     void CPU::pushByte(const BYTE b) {
         WORD addr = getSP();
         memory[--addr] = b;
@@ -1504,15 +1855,26 @@ internal class Cpu8080A
     #define mov_mac(D, S) put##D(get##S());
 
     #define mov_mac_from_m(D) put##D(memory[getHL()]);
+*/
+    bool parityEven(ushort d)
+    {
+        var rslt = true;
+        while (d != 0)
+        {
+            if ((d & 1) != 0) rslt = !rslt;
+            d = (ushort)(d >> 1);
+        }
+        return rslt;
+    }
 
-    #define setFlagsZPS(r) {\
-        BYTE tmpFlags; \
-        tmpFlags = getFlags() & (~(zeroflag | parityflag | signflag)); \
-        if (r == 0) tmpFlags |= zeroflag; \
-        if (parityEven(r)) tmpFlags |= parityflag; \
-        if (r & 0x80) tmpFlags |= signflag; \
-        putFlags(tmpFlags); \
-    }     
-         */
+    void setFlagsZPS(byte r)
+    {
+        var tmpFlags = (byte)(flags & (~(zeroflag | parityflag | signflag)));
+        if (r == 0) tmpFlags |= zeroflag;
+        if (parityEven(r)) tmpFlags |= parityflag;
+        if ((r & 0x80) != 0) tmpFlags |= signflag;
+        flags = tmpFlags;
+    }
+
 
 }
