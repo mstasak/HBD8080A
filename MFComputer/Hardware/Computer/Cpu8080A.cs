@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
 using Windows.Data.Text;
 using Windows.Devices.Portable;
 using Windows.UI.ViewManagement.Core;
@@ -1297,7 +1298,7 @@ internal class Cpu8080A
                 if ((flags & zeroflag) == 0) {
                     pc = popWord();
                     cycles = 11;
-                } else { 
+                } else {
                     cycles = 5;
                 }
                 break; //rnz
@@ -1567,7 +1568,7 @@ internal class Cpu8080A
                 break; //xchg (DE, HL)
             case 0xec:
                 wTmp = fetchWord();
-                if ((flags & parityflag) != 0)  {
+                if ((flags & parityflag) != 0) {
                     pushWord(pc);
                     pc = wTmp;
                     cycles = 17;
@@ -1683,7 +1684,7 @@ internal class Cpu8080A
                 pc = 0x0038;
                 cycles = 11;
                 break; //rst 7
-            //default: break;
+                       //default: break;
         }
         return cycles;
     }
@@ -1782,13 +1783,26 @@ internal class Cpu8080A
 
     void portOutput(byte port, byte value)
     {
-        //TODO: call an output delegate?
+        //TODOMAYBE: keep an array or dictionary of outputdelegates keyed by port#?
+        if (outputter is not null) {
+            outputter(port, value);    
+        }
     }
 
     byte portInput(byte port)
     {
-        return 0xff;
-        //TODO: call an input delegate?
+        //TODOMAYBE: keep an array or dictionary of inputdelegates keyed by port#?
+        if (inputter is not null)
+        {
+            return inputter(port);
+        }
+        else {
+            return 0xff;
+        }
     }
 
+    public delegate void OutputAction(byte port, byte value);
+    public OutputAction? outputter;
+    public delegate byte InputAction(byte port);
+    public InputAction? inputter;
 }
