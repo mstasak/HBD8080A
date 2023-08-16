@@ -1,305 +1,410 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json.Bson;
-using Newtonsoft.Json.Linq;
-using Windows.Data.Text;
-using Windows.Devices.Portable;
-using Windows.UI.ViewManagement.Core;
+﻿namespace MFComputer.Hardware.Computer;
+internal class Cpu8080A {
 
-namespace MFComputer.Hardware.Computer;
-internal class Cpu8080A
-{
+    #region Flag Bits
+    /// <summary>
+    /// Sign flag constant.  This bit set indicates a negative value result from some instructions (MSB set).
+    /// </summary>
+    public const byte signflag = 0x80;
+    
+    /// <summary>
+    /// Zero flag constant.  This bit set indicates a zero value result from some instructions.
+    /// </summary>
+    public const byte zeroflag = 0x40;
 
-    const byte signflag = 0x80; //1=negative (msb set)
-    const byte zeroflag = 0x40;
-    const byte auxcarryflag = 0x10;
-    const byte parityflag = 0x04; //1=even
-    const byte carryflag = 0x01;
-    const byte alwayszeroflags = 0x28;
-    const byte alwaysoneflags = 0x02;
+    /// <summary>
+    /// Auxillary flag constant.  This bit set indicates a lower half-byte (nibble) carry/borrow result from some instructions.
+    /// This is sometimes useful for BCD arithmetic.
+    /// </summary>
+    public const byte auxcarryflag = 0x10;
 
+    /// <summary>
+    /// Parity flag constant.  This bit set indicates an even number of 1 bits in the result of some instructions.
+    /// </summary>
+    public const byte parityflag = 0x04;
 
-    bool running;
-    bool interruptsEnabled;
-    byte a, flags, b, c, d, e, h, l;
-    ushort pc, sp;
-    //ushort _bc;
-    //de
-    //hl
-    //aflags
-    byte[] memory = new byte[65536];
-    //byte[] rom = new byte[4096];
-    bool isROM(ushort addr)
-    {
+    /// <summary>
+    /// Carry flag bit.  This indicates a carry/overflow or borrow/underflow from some arithmetic and comaprison instructions.
+    /// </summary>
+    public const byte carryflag = 0x01;
+
+    /// <summary>
+    /// These bits are always set to zero in the flags register.
+    /// </summary>
+    public const byte alwayszeroflags = 0x28;
+
+    /// <summary>
+    /// These bits are always set to one in the flags register.
+    /// </summary>
+    public const byte alwaysoneflags = 0x02;
+    #endregion Flag Bits
+
+    #region Machine State
+    /// <summary>
+    /// Is the PC running?  Usually false unless .Run() method is executing.
+    /// </summary>
+    public bool IsRunning;
+
+    /// <summary>
+    /// Are interrupts enabled?  Don't know if we will even simulate this.
+    /// </summary>
+    public bool IsInterruptsEnabled;
+    #endregion Machine State
+
+    #region Registers
+    /// <summary>
+    /// The "A" register (accumulator)
+    /// </summary>
+    public byte A;
+
+    /// <summary>
+    /// The "Flags" register (Sign,Zero,0,AuxCarry,0,Parity,1,Carry)
+    /// </summary>
+    public byte Flags;
+
+    /// <summary>
+    /// The "B" register (general purpose)
+    /// </summary>
+    public byte B;
+
+    /// <summary>
+    /// The "C" register (general purpose)
+    /// </summary>
+    public byte C;
+
+    /// <summary>
+    /// The "D" register (general purpose)
+    /// </summary>
+    public byte D;
+
+    /// <summary>
+    /// The "E" register (general purpose)
+    /// </summary>
+    public byte E;
+
+    /// <summary>
+    /// The "H" register (general purpose)
+    /// </summary>
+    public byte H;
+
+    /// <summary>
+    /// The "L" register (general purpose)
+    /// </summary>
+    public byte L;
+
+    /// <summary>
+    /// The "PC" register (Program Counter, aka Instruction Pointer)
+    /// </summary>
+    public ushort PC;
+
+    /// <summary>
+    /// The "SP" register (Stack Pointer)
+    /// </summary>
+    public ushort SP;
+
+    /// <summary>
+    /// Register pair BC.
+    /// </summary>
+    public ushort BC {
+        get => BitManipulation.MakeWord(B, C); set => (B, C) = BitManipulation.SplitWord(value);
+    }
+
+    /// <summary>
+    /// Register pair DE.
+    /// </summary>
+    public ushort DE {
+        get => BitManipulation.MakeWord(D, E); set => (D, E) = BitManipulation.SplitWord(value);
+    }
+
+    /// <summary>
+    /// Register pair HL.
+    /// </summary>
+    public ushort HL {
+        get => BitManipulation.MakeWord(H, L); set => (H, L) = BitManipulation.SplitWord(value);
+    }
+
+    /// <summary>
+    /// Processor status word, consisting of (high byte) accumulator and (low byte) flags.
+    /// </summary>
+    public ushort PSW {
+        get => BitManipulation.MakeWord(A, Flags); set => (A, Flags) = BitManipulation.SplitWord(value);
+    }
+    #endregion Registers
+
+    #region Memory
+    /// <summary>
+    /// The entire addressable memory space.  We treat 0x0000-0xefff as RAM, 0xf000-0xffff as ROM.
+    /// </summary>
+    public byte[] Memory = new byte[65536];
+
+    /// <summary>
+    /// Test if an address is in ROM (read-only memory).
+    /// </summary>
+    /// <param name="addr">Address to test</param>
+    /// <returns>True if address points to read-only memory.</returns>
+    public static bool IsROM(ushort addr) {
         return (addr & 0xf000) == 0xf000;
     }
-
-    ushort makeWord(byte h, byte l)
-    {
-        return (ushort)((h << 8) | l);
-    }
-
-    byte highByte(ushort word)
-    {
-        return (byte)((word >> 8) & 0xff);
-    }
-
-    byte lowByte(ushort word)
-    {
-        return (byte)(word & 0xff);
-    }
-
-    ushort lowWord(int i)
-    {
-        return (ushort)(i & 0xff);
-    }
-    ushort highWord(int i)
-    {
-        return (ushort)((i >> 16) & 0xff);
-    }
-
-    (byte, byte) splitWord(ushort w)
-    {
-        return (highByte(w), lowByte(w));
-    }
-    public byte m
-    {
-        get => memory[hl];
+    /// <summary>
+    /// Byte of memory addressed by register pair HL.
+    /// </summary>
+    public byte M {
+        get => Memory[HL];
         set {
-            if (!isROM(hl)) {
-                memory[hl] = value;
+            if (!IsROM(HL)) {
+                Memory[HL] = value;
             }
         }
     }
-    public ushort bc
-    {
-        get => makeWord(b, c); set => (b, c) = splitWord(value);
-    }
-    public ushort de
-    {
-        get => makeWord(d, e); set => (d, e) = splitWord(value);
-    }
-    public ushort hl
-    {
-        get => makeWord(h, l); set => (h, l) = splitWord(value);
-    }
-    public ushort aflags
-    {
-        get => makeWord(a, flags); set => (a, flags) = splitWord(value);
+
+    private byte FetchByte() { //can c# designate or hint an inline function/method?
+        return Memory[PC++];
     }
 
-    void Run(ushort? address = 0x100)
-    {
-        if (address.HasValue)
-        {
-            pc = address.Value;
+    private ushort FetchWord() {
+        //return (ushort)(fetchByte() | (ushort)(fetchByte() << 8));
+        var newPC = PC;
+        var lowByte = Memory[newPC++];
+        var highByte = Memory[newPC++];
+        PC = newPC;
+        return BitManipulation.MakeWord(highByte, lowByte);
+    }
+
+    //private void pushByte(byte b) {
+    //    Memory[--SP] = b;
+    //}
+
+    private void PushWord(ushort w) {
+        var newSP = SP; //minimizing SP get/put calls for speed
+        Memory[--newSP] = BitManipulation.HighByte(w);
+        Memory[--newSP] = BitManipulation.LowByte(w);
+        SP = newSP;
+    }
+
+    //private byte popByte() {
+    //    return Memory[SP++];
+    //}
+
+    private ushort PopWord() {
+        var newSP = SP;
+        var lowByte = Memory[newSP++];
+        var highByte = Memory[newSP++];
+        SP = newSP;
+        return BitManipulation.MakeWord(highByte, lowByte);
+    }
+    #endregion Memory
+
+    #region Execution
+    /// <summary>
+    /// Enter run mode, until a halt instruction is encountered.
+    /// We will need some means for external start-stop-reset-poweroff type control inputs.
+    /// </summary>
+    /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
+    public void Run(ushort? address = 0x100) {
+        if (address.HasValue) {
+            PC = address.Value;
         }
-        running = true;
-        while (running)
-        {
-            DoInstruction();
+        IsRunning = true;
+        while (IsRunning) {
+            RunInstruction();
         }
     }
 
-    int DoInstruction()
-    {
-        //byte opCode = ram[pc++];
-        var opcode = fetchByte();
-        int cycles = 4;
+    /// <summary>
+    /// Run one instruction.  PC is advanced past instruction and any operands.
+    /// </summary>
+    /// <returns>Number of cycles instruction would use on actual 8080A hardware.</returns>
+    public int RunInstruction() {
+        var opcode = FetchByte();
+        var cycles = 4;
         int iTmp;
         byte bTmp;
         byte flagsTmp;
-        //byte accTmp;
         ushort wTmp;
         bool newCarry;
         bool newAuxCarry;
-        switch (opcode)
-        {
+        switch (opcode) {
             case 0x00:
                 break; //nop (4 cycles)
             case 0x01:
-                bc = fetchWord();
+                BC = FetchWord();
                 cycles = 10;
                 break; //lxi b
             case 0x02:
-                memory[bc] = a;
+                Memory[BC] = A;
                 cycles = 7;
                 break; //stax b
             case 0x03:
-                unchecked { bc++; }
+                unchecked { BC++; }
                 cycles = 5;
                 break; //inx b
             case 0x04:
-                unchecked { b++; }
+                unchecked { B++; }
                 //standard zero, sign, parity handling
-                setFlagsZPS(b);
+                SetFlagsZPS(B);
                 //also set ac on right nibl overflow
-                flags = (byte)((flags & ~auxcarryflag) | ((b & 0x0f) == 0 ? auxcarryflag : 0));
+                Flags = (byte)((Flags & ~auxcarryflag) | ((B & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr b
             case 0x05:
-                unchecked { b--; }
+                unchecked { B--; }
                 //standard zero, sign, parity handling
-                setFlagsZPS(b);
+                SetFlagsZPS(B);
                 //also set ac on right nibl underflow CONCERN: borrows may not set ac as expected - maybe set to 1 then blear when borrow occurs? find a test suite!
-                flags = (byte)((flags & ~auxcarryflag) | (((b & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                Flags = (byte)((Flags & ~auxcarryflag) | (((B & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr b
             case 0x06:
-                b = fetchByte();
+                B = FetchByte();
                 cycles = 7;
                 break; //mvi b,d8
-            case 0x07:
-                {
-                    bTmp = (byte)(((a << 1) & 0xfe) | (a >> 7));
-                    flags = (byte)((flags & ~carryflag) | (((a & 1) != 0) ? carryflag : 0));
-                    a = bTmp;
+            case 0x07: {
+                    bTmp = (byte)(((A << 1) & 0xfe) | (A >> 7));
+                    Flags = (byte)((Flags & ~carryflag) | (((A & 1) != 0) ? carryflag : 0));
+                    A = bTmp;
                 }
                 break; //rlc (4 cycles)
             case 0x08: break;
             case 0x09:
-                iTmp = hl + bc;
-                hl = unchecked((ushort)iTmp);
-                flags = (byte)((flags & ~carryflag) | ((iTmp > 0xffff) ? carryflag : 0));
+                iTmp = HL + BC;
+                HL = unchecked((ushort)iTmp);
+                Flags = (byte)((Flags & ~carryflag) | ((iTmp > 0xffff) ? carryflag : 0));
                 cycles = 10;
                 break; //dad b
             case 0x0a:
-                a = memory[bc];
+                A = Memory[BC];
                 cycles = 7;
                 break; //ldax b
             case 0x0b:
-                unchecked { bc--; }
+                unchecked { BC--; }
                 cycles = 5;
                 break; //dcx b
             case 0x0c:
-                unchecked { c++; }
-                setFlagsZPS(c);
-                flags = (byte)((flags & ~auxcarryflag) | ((c & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { C++; }
+                SetFlagsZPS(C);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((C & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr c
             case 0x0d:
-                unchecked { c--; }
-                setFlagsZPS(c);
-                flags = (byte)((flags & ~auxcarryflag) | (((c & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { C--; }
+                SetFlagsZPS(C);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((C & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr c
             case 0x0e:
-                c = fetchByte();
+                C = FetchByte();
                 cycles = 7;
                 break; //mvi c,d8
             case 0x0f:
-                a = (byte)((a >> 1) | (((a & 0x01) != 0) ? 0x80 : 0));
-                flags = (byte)((flags & ~carryflag) | (((a & 0x80) != 0) ? carryflag : 0));
+                A = (byte)((A >> 1) | (((A & 0x01) != 0) ? 0x80 : 0));
+                Flags = (byte)((Flags & ~carryflag) | (((A & 0x80) != 0) ? carryflag : 0));
                 break; //rrc (4 cycles)
             case 0x10: break;
             case 0x11:
-                de = fetchWord();
+                DE = FetchWord();
                 cycles = 10;
                 break; //lxi d
             case 0x12:
-                memory[de] = a;
+                Memory[DE] = A;
                 cycles = 7;
                 break; //stax d
             case 0x13:
-                unchecked { de++; }
+                unchecked { DE++; }
                 cycles = 5;
                 break; //inx d
             case 0x14:
-                unchecked { d++; }
-                setFlagsZPS(d);
-                flags = (byte)((flags & ~auxcarryflag) | ((d & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { D++; }
+                SetFlagsZPS(D);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((D & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr d
             case 0x15:
-                unchecked { d--; }
-                setFlagsZPS(d);
-                flags = (byte)((flags & ~auxcarryflag) | (((d & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { D--; }
+                SetFlagsZPS(D);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((D & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr d
             case 0x16:
-                d = fetchByte();
+                D = FetchByte();
                 cycles = 7;
                 break; //mvi d,d8
             case 0x17:
-                bTmp = a;
+                bTmp = A;
                 newCarry = (bTmp & 0x80) != 0;
-                a = (byte)((bTmp << 1) | (((flags & carryflag) != 0) ? 1 : 0));
-                flags = (byte)((flags & ~carryflag) | (newCarry ? carryflag : 0));
+                A = (byte)((bTmp << 1) | (((Flags & carryflag) != 0) ? 1 : 0));
+                Flags = (byte)((Flags & ~carryflag) | (newCarry ? carryflag : 0));
                 break; //ral (4 cycles)
             case 0x18: break;
             case 0x19:
-                iTmp = hl + de;
-                hl = unchecked((ushort)iTmp);
-                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
+                iTmp = HL + DE;
+                HL = unchecked((ushort)iTmp);
+                Flags = (iTmp > 0xffff) ? (byte)(Flags | carryflag) : (byte)(Flags & ~carryflag);
                 cycles = 10;
                 break; //dad d
             case 0x1a:
-                a = memory[de];
+                A = Memory[DE];
                 cycles = 7;
                 break; //ldax d
             case 0x1b:
-                unchecked { de--; }
+                unchecked { DE--; }
                 cycles = 5;
                 break; //dcx d
             case 0x1c:
-                unchecked { e++; }
-                setFlagsZPS(e);
-                flags = (byte)((flags & ~auxcarryflag) | ((e & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { E++; }
+                SetFlagsZPS(E);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((E & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr e
             case 0x1d:
-                unchecked { e--; }
-                setFlagsZPS(e);
-                flags = (byte)((flags & ~auxcarryflag) | (((e & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { E--; }
+                SetFlagsZPS(E);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((E & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr e
             case 0x1e:
-                e = fetchByte();
+                E = FetchByte();
                 cycles = 7;
                 break; //mvi e,d8
             case 0x1f:
-                bTmp = a;
+                bTmp = A;
                 newCarry = (bTmp & 0x01) != 0;
-                a = (byte)((bTmp >> 1) | (((flags & carryflag) != 0) ? 0x80 : 0));
-                flags = (byte)((flags & ~carryflag) | (newCarry ? carryflag : 0));
+                A = (byte)((bTmp >> 1) | (((Flags & carryflag) != 0) ? 0x80 : 0));
+                Flags = (byte)((Flags & ~carryflag) | (newCarry ? carryflag : 0));
                 break; //rar (4 cycles)
             case 0x20: break;
             case 0x21:
-                hl = fetchWord();
+                HL = FetchWord();
                 cycles = 10;
                 break; //lxi h
             case 0x22:
-                wTmp = fetchWord();
-                memory[wTmp++] = l; //L register
-                memory[wTmp] = h;
+                wTmp = FetchWord();
+                Memory[wTmp++] = L; //L register
+                Memory[wTmp] = H;
                 cycles = 16;
                 break; //shld a16
             case 0x23:
-                unchecked { hl++; }
+                unchecked { HL++; }
                 cycles = 5;
                 break; //inx h
             case 0x24:
-                unchecked { h++; }
-                setFlagsZPS(h);
-                flags = (byte)((flags & ~auxcarryflag) | ((h & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { H++; }
+                SetFlagsZPS(H);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((H & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr h
             case 0x25:
-                unchecked { h--; }
-                setFlagsZPS(h);
-                flags = (byte)((flags & ~auxcarryflag) | (((h & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { H--; }
+                SetFlagsZPS(H);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((H & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr h
             case 0x26:
-                h = fetchByte();
+                H = FetchByte();
                 cycles = 7;
                 break; //mvi h,d8
             case 0x27:
-                flagsTmp = flags;
-                bTmp = a;
+                flagsTmp = Flags;
+                bTmp = A;
                 if (((bTmp & 0x0f) > 9) || ((flagsTmp & auxcarryflag) != 0)) {
                     flagsTmp = (byte)((flagsTmp & ~auxcarryflag) | (((bTmp & 0x0f) > 9) ? auxcarryflag : 0));
                     bTmp = (byte)(bTmp + 6);
@@ -312,1165 +417,1171 @@ internal class Cpu8080A
                 } else {
                     flagsTmp = (byte)(flagsTmp & (~carryflag));
                 }
-                flags = flagsTmp;
-                a = bTmp;
-                setFlagsZPS(bTmp);
+                Flags = flagsTmp;
+                A = bTmp;
+                SetFlagsZPS(bTmp);
                 cycles = 4;
                 break; //daa
             case 0x28: break;
             case 0x29:
-                iTmp = hl + hl;
-                hl = unchecked((ushort)iTmp);
-                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
+                iTmp = HL + HL;
+                HL = unchecked((ushort)iTmp);
+                Flags = (iTmp > 0xffff) ? (byte)(Flags | carryflag) : (byte)(Flags & ~carryflag);
                 cycles = 10;
                 break; //dad h
             case 0x2a:
-                wTmp = fetchWord();
-                wTmp = (ushort)((memory[wTmp++]) | (memory[wTmp] << 8));
-                hl = wTmp;
+                wTmp = FetchWord();
+                HL = (ushort)((Memory[wTmp++]) | (Memory[wTmp] << 8));
                 cycles = 16;
                 break; //lhld a16
             case 0x2b:
-                unchecked { hl--; }
+                unchecked { HL--; }
                 cycles = 5;
                 break; //dcx h
             case 0x2c:
-                unchecked { l++; }
-                setFlagsZPS(l);
-                flags = (byte)((flags & ~auxcarryflag) | ((l & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { L++; }
+                SetFlagsZPS(L);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((L & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr l
             case 0x2d:
-                unchecked { l--; }
-                setFlagsZPS(l);
-                flags = (byte)((flags & ~auxcarryflag) | (((l & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { L--; }
+                SetFlagsZPS(L);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((L & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr l
             case 0x2e:
-                l = fetchByte();
+                L = FetchByte();
                 cycles = 7;
                 break; //mvi l,d8
             case 0x2f:
-                a = (byte)~a;
+                A = (byte)~A;
                 //cycles = 4;
                 break; //cma
             case 0x30: break;
             case 0x31:
-                sp = fetchWord();
+                SP = FetchWord();
                 cycles = 10;
                 break; //lxi sp
             case 0x32:
-                memory[fetchWord()] = a;
+                Memory[FetchWord()] = A;
                 cycles = 13;
                 break; //sta a16
             case 0x33:
-                unchecked { sp++; }
+                unchecked { SP++; }
                 cycles = 5;
                 break; //inx sp
             case 0x34:
-                unchecked { m++; }
-                setFlagsZPS(m);
-                flags = (byte)((flags & ~auxcarryflag) | ((m & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { M++; }
+                SetFlagsZPS(M);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((M & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 10;
                 break; //inr m
             case 0x35:
-                unchecked { m--; }
-                setFlagsZPS(m);
-                flags = (byte)((flags & ~auxcarryflag) | (((m & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { M--; }
+                SetFlagsZPS(M);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((M & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 10;
                 break; //dcr m
             case 0x36:
-                memory[hl] = fetchByte();
+                M = FetchByte();
                 cycles = 10;
                 break; //mvi m,d8
             case 0x37:
-                flags = (byte)(flags | carryflag);
+                Flags = (byte)(Flags | carryflag);
                 //cycles = 4;
                 break; //STC
             case 0x38: break;
             case 0x39:
-                iTmp = hl + sp;
-                hl = unchecked((ushort)iTmp);
-                flags = (iTmp > 0xffff) ? (byte)(flags | carryflag) : (byte)(flags & ~carryflag);
+                iTmp = HL + SP;
+                HL = unchecked((ushort)iTmp);
+                Flags = (iTmp > 0xffff) ? (byte)(Flags | carryflag) : (byte)(Flags & ~carryflag);
                 cycles = 10;
                 break; //dad sp
             case 0x3a:
-                a = memory[fetchWord()];
+                A = Memory[FetchWord()];
                 cycles = 13;
                 break; //lda a16
             case 0x3b:
-                unchecked { sp--; }
+                unchecked { SP--; }
                 cycles = 5;
                 break; //dcx sp
             case 0x3c:
-                unchecked { a++; }
-                setFlagsZPS(a);
-                flags = (byte)((flags & ~auxcarryflag) | ((a & 0x0f) == 0 ? auxcarryflag : 0));
+                unchecked { A++; }
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & ~auxcarryflag) | ((A & 0x0f) == 0 ? auxcarryflag : 0));
                 cycles = 5;
                 break; //inr a
             case 0x3d:
-                unchecked { a--; }
-                setFlagsZPS(a);
-                flags = (byte)((flags & ~auxcarryflag) | (((a & 0x0f) == 0x0f) ? auxcarryflag : 0));
+                unchecked { A--; }
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & ~auxcarryflag) | (((A & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr a
             case 0x3e:
-                a = fetchByte();
+                A = FetchByte();
                 cycles = 7;
                 break; //mvi a,d8
             case 0x3f:
-                flags = (byte)(flags ^ carryflag);
+                Flags = (byte)(Flags ^ carryflag);
                 break; //CMC
             case 0x40:
                 cycles = 5;
                 break; //mov b,b
             case 0x41:
-                b = c;
+                B = C;
                 cycles = 5;
                 break; //mov b,c
             case 0x42:
-                b = d;
+                B = D;
                 cycles = 5;
                 break; //mov b,d
             case 0x43:
-                b = e;
+                B = E;
                 cycles = 5;
                 break; //mov b,e
             case 0x44:
-                b = h;
+                B = H;
                 cycles = 5;
                 break; //mov b,h
             case 0x45:
-                b = l;
+                B = L;
                 cycles = 5;
                 break; //mov b,l
             case 0x46:
-                b = m;
+                B = M;
                 cycles = 7;
                 break; //mov b,m
             case 0x47:
-                b = a;
+                B = A;
                 cycles = 5;
                 break; //mov b,a
             case 0x48:
-                c = b;
+                C = B;
                 cycles = 5;
                 break; //mov c,b
             case 0x49:
                 cycles = 5;
                 break; //mov c,c
             case 0x4a:
-                c = d;
+                C = D;
                 cycles = 5;
                 break; //mov c,d
             case 0x4b:
-                c = e;
+                C = E;
                 cycles = 5;
                 break; //mov c,e
             case 0x4c:
-                c = h;
+                C = H;
                 cycles = 5;
                 break; //mov c,h
             case 0x4d:
-                c = l;
+                C = L;
                 cycles = 5;
                 break; //mov c,l
             case 0x4e:
-                c = m;
+                C = M;
                 cycles = 7;
                 break; //mov c,m
             case 0x4f:
-                c = a;
+                C = A;
                 cycles = 5;
                 break; //mov c,a
             case 0x50:
-                d = b;
+                D = B;
                 cycles = 5;
                 break; //mov d,b
             case 0x51:
-                d = c;
+                D = C;
                 cycles = 5;
                 break; //mov d,c
             case 0x52:
                 cycles = 5;
                 break; //mov d,d
             case 0x53:
-                d = e;
+                D = E;
                 cycles = 5;
                 break; //mov d,e
             case 0x54:
-                d = h;
+                D = H;
                 cycles = 5;
                 break; //mov d,h
             case 0x55:
-                d = l;
+                D = L;
                 cycles = 5;
                 break; //mov d,l
             case 0x56:
-                d = m;
+                D = M;
                 cycles = 7;
                 break; //mov d,m
             case 0x57:
-                d = a;
+                D = A;
                 cycles = 5;
                 break; //mov d,a
             case 0x58:
-                e = b;
+                E = B;
                 cycles = 5;
                 break; //mov e,b
             case 0x59:
-                e = c;
+                E = C;
                 cycles = 5;
                 break; //mov e,c
             case 0x5a:
-                e = d;
+                E = D;
                 cycles = 5;
                 break; //mov e,d
             case 0x5b:
                 cycles = 5;
                 break; //mov e,e
             case 0x5c:
-                e = h;
+                E = H;
                 cycles = 5;
                 break; //mov e,h
             case 0x5d:
-                e = l;
+                E = L;
                 cycles = 5;
                 break; //mov e,l
             case 0x5e:
-                e = m;
+                E = M;
                 cycles = 7;
                 break; //mov e,m
             case 0x5f:
-                e = a;
+                E = A;
                 cycles = 5;
                 break; //mov e,a
             case 0x60:
-                h = b;
+                H = B;
                 cycles = 5;
                 break; //mov h,b
             case 0x61:
-                h = c;
+                H = C;
                 cycles = 5;
                 break; //mov h,c
             case 0x62:
-                h = d;
+                H = D;
                 cycles = 5;
                 break; //mov h,d
             case 0x63:
-                h = e;
+                H = E;
                 cycles = 5;
                 break; //mov h,e
             case 0x64:
                 cycles = 5;
                 break; //mov h,h
             case 0x65:
-                h = l;
+                H = L;
                 cycles = 5;
                 break; //mov h,l
             case 0x66:
-                h = m;
+                H = M;
                 cycles = 7;
                 break; //mov h,m
             case 0x67:
-                h = a;
+                H = A;
                 cycles = 5;
                 break; //mov h,a
             case 0x68:
-                l = b;
+                L = B;
                 cycles = 5;
                 break; //mov l,b
             case 0x69:
-                l = c;
+                L = C;
                 cycles = 5;
                 break; //mov l,c
             case 0x6a:
-                l = d;
+                L = D;
                 cycles = 5;
                 break; //mov l,d
             case 0x6b:
-                l = e;
+                L = E;
                 cycles = 5;
                 break; //mov l,e
             case 0x6c:
-                l = h;
+                L = H;
                 cycles = 5;
                 break; //mov l,h
             case 0x6d:
                 cycles = 5;
                 break; //mov l,l
             case 0x6e:
-                l = m;
+                L = M;
                 cycles = 7;
                 break; //mov l,m
             case 0x6f:
-                l = a;
+                L = A;
                 cycles = 5;
                 break; //mov l,a
             case 0x70:
-                m = b;
+                M = B;
                 cycles = 7;
                 break; //mov m,b
             case 0x71:
-                m = c;
+                M = C;
                 cycles = 7;
                 break; //mov m,c
             case 0x72:
-                m = d;
+                M = D;
                 cycles = 7;
                 break; //mov m,d
             case 0x73:
-                m = e;
+                M = E;
                 cycles = 7;
                 break; //mov m,e
             case 0x74:
-                m = h;
+                M = H;
                 cycles = 7;
                 break; //mov m,h
             case 0x75:
-                m = l;
+                M = L;
                 cycles = 7;
                 break; //mov m,l
             case 0x76:
                 cycles = 7;
-                running = false;
+                IsRunning = false;
                 break; //hlt
             case 0x77:
-                m = a;
+                M = A;
                 cycles = 7;
                 break; //mov m,a
             case 0x78:
-                a = b;
+                A = B;
                 cycles = 5;
                 break; //mov a,b
             case 0x79:
-                a = c;
+                A = C;
                 cycles = 5;
                 break; //mov a,c
             case 0x7a:
-                a = d;
+                A = D;
                 cycles = 5;
                 break; //mov a,d
             case 0x7b:
-                a = e;
+                A = E;
                 cycles = 5;
                 break; //mov a,e
             case 0x7c:
-                a = h;
+                A = H;
                 cycles = 5;
                 break; //mov a,h
             case 0x7d:
-                a = l;
+                A = L;
                 cycles = 5;
                 break; //mov a,l
             case 0x7e:
-                a = m;
+                A = M;
                 cycles = 7;
                 break; //mov a,m
             case 0x7f:
                 cycles = 5;
                 break; //mov a,a
             case 0x80:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + b);
-                newAuxCarry = (a & 0x0f) + (b & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + B);
+                newAuxCarry = (A & 0x0f) + (B & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add b
             case 0x81:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + c);
-                newAuxCarry = (a & 0x0f) + (c & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + C);
+                newAuxCarry = (A & 0x0f) + (C & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add c
             case 0x82:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + d);
-                newAuxCarry = (a & 0x0f) + (d & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + D);
+                newAuxCarry = (A & 0x0f) + (D & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add d
             case 0x83:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + e);
-                newAuxCarry = (a & 0x0f) + (e & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + E);
+                newAuxCarry = (A & 0x0f) + (E & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add e
             case 0x84:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + h);
-                newAuxCarry = (a & 0x0f) + (h & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + H);
+                newAuxCarry = (A & 0x0f) + (H & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add h
             case 0x85:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + l);
-                newAuxCarry = (a & 0x0f) + (l & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + L);
+                newAuxCarry = (A & 0x0f) + (L & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add l
             case 0x86:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + m);
-                newAuxCarry = (a & 0x0f) + (m & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + M);
+                newAuxCarry = (A & 0x0f) + (M & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //add m
             case 0x87:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + a);
-                newAuxCarry = (a & 0x0f) + (a & 0x0f) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + A);
+                newAuxCarry = (A & 0x0f) + (A & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //add a
             case 0x88:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + b + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (b & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + B + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (B & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc b
             case 0x89:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + c + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (c & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + C + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (C & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc c
             case 0x8a:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + d + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (d & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + D + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (D & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc d
             case 0x8b:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + e + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (e & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + E + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (E & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc e
             case 0x8c:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + h + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (h & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + H + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (H & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc h
             case 0x8d:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + l + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (l & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + L + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (L & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc l
             case 0x8e:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + m + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (m & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + M + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (M & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //adc m
             case 0x8f:
-                bTmp = a;
-                wTmp = (ushort)(bTmp + a + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (a & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = A;
+                wTmp = (ushort)(bTmp + A + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (A & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //adc a
             case 0x90:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - b);
-                newAuxCarry = (a & 0x0f) - (b & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - B);
+                newAuxCarry = (A & 0x0f) - (B & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub b
             case 0x91:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - c);
-                newAuxCarry = (a & 0x0f) - (c & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - C);
+                newAuxCarry = (A & 0x0f) - (C & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub c
             case 0x92:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - d);
-                newAuxCarry = (a & 0x0f) - (d & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - D);
+                newAuxCarry = (A & 0x0f) - (D & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub d
             case 0x93:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - e);
-                newAuxCarry = (a & 0x0f) - (e & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - E);
+                newAuxCarry = (A & 0x0f) - (E & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub e
             case 0x94:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - h);
-                newAuxCarry = (a & 0x0f) - (h & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - H);
+                newAuxCarry = (A & 0x0f) - (H & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub h
             case 0x95:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - l);
-                newAuxCarry = (a & 0x0f) - (l & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - L);
+                newAuxCarry = (A & 0x0f) - (L & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub l
             case 0x96:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - m);
-                newAuxCarry = (a & 0x0f) - (m & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - M);
+                newAuxCarry = (A & 0x0f) - (M & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sub m
             case 0x97:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - a);
-                newAuxCarry = (a & 0x0f) - (a & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - A);
+                newAuxCarry = (A & 0x0f) - (A & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sub a
             case 0x98:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - b - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (b & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - B - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (B & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb b
             case 0x99:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - c - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (c & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - C - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (C & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb c
             case 0x9a:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - d - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (d & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - D - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (D & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb d
             case 0x9b:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - e - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (e & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - E - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (E & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb e
             case 0x9c:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - h - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (h & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - H - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (H & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb h
             case 0x9d:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - l - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (l & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - L - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (L & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb l
             case 0x9e:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - m - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (m & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - M - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (M & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sbb m
             case 0x9f:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - a - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (a & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - A - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (A & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //sbb a
             case 0xa0:
-                a = (byte)(a & b);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & B);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana b
             case 0xa1:
-                a = (byte)(a & c);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & C);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana c
             case 0xa2:
-                a = (byte)(a & d);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & D);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana d
             case 0xa3:
-                a = (byte)(a & e);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & E);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana e
             case 0xa4:
-                a = (byte)(a & h);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & H);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana h
             case 0xa5:
-                a = (byte)(a & l);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & L);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana l
             case 0xa6:
-                a = (byte)(a & m);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & M);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //ana m
             case 0xa7:
-                a = (byte)(a & a);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A & A);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ana a
             case 0xa8:
-                a = (byte)(a ^ b);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ B);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra b
             case 0xa9:
-                a = (byte)(a ^ c);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ C);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra c
             case 0xaa:
-                a = (byte)(a ^ d);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ D);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra d
             case 0xab:
-                a = (byte)(a ^ e);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ E);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra e
             case 0xac:
-                a = (byte)(a ^ h);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ H);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra h
             case 0xad:
-                a = (byte)(a ^ l);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ L);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra l
             case 0xae:
-                a = (byte)(a ^ m);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ M);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //xra m
             case 0xaf:
-                a = (byte)(a ^ a);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A ^ A);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //xra a
             case 0xb0:
-                a = (byte)(a | b);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | B);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora b
             case 0xb1:
-                a = (byte)(a | c);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | C);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora c
             case 0xb2:
-                a = (byte)(a | d);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | D);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora d
             case 0xb3:
-                a = (byte)(a | e);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | E);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora e
             case 0xb4:
-                a = (byte)(a | h);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | H);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora h
             case 0xb5:
-                a = (byte)(a | l);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | L);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora l
             case 0xb6:
-                a = (byte)(a | m);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | M);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 cycles = 7;
                 break; //ora m
             case 0xb7:
-                a = (byte)(a | a);
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~carryflag)); //CY,AC
+                A = (byte)(A | A);
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~carryflag)); //CY,AC
                 //cycles = 4;
                 break; //ora a
             case 0xb8:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - b);
-                newAuxCarry = (a & 0x0f) - (b & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - B);
+                newAuxCarry = (A & 0x0f) - (B & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp b
             case 0xb9:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - c);
-                newAuxCarry = (a & 0x0f) - (c & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - C);
+                newAuxCarry = (A & 0x0f) - (C & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp c
             case 0xba:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - d);
-                newAuxCarry = (a & 0x0f) - (d & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - D);
+                newAuxCarry = (A & 0x0f) - (D & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp d
             case 0xbb:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - e);
-                newAuxCarry = (a & 0x0f) - (e & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - E);
+                newAuxCarry = (A & 0x0f) - (E & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp e
             case 0xbc:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - h);
-                newAuxCarry = (a & 0x0f) - (h & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - H);
+                newAuxCarry = (A & 0x0f) - (H & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp h
             case 0xbd:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - l);
-                newAuxCarry = (a & 0x0f) - (l & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - L);
+                newAuxCarry = (A & 0x0f) - (L & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp l
             case 0xbe:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - m);
-                newAuxCarry = (a & 0x0f) - (m & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - M);
+                newAuxCarry = (A & 0x0f) - (M & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //cmp m
             case 0xbf:
-                bTmp = a;
-                wTmp = (ushort)(bTmp - a);
-                newAuxCarry = (a & 0x0f) - (a & 0x0f) < 0;
+                bTmp = A;
+                wTmp = (ushort)(bTmp - A);
+                newAuxCarry = (A & 0x0f) - (A & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp a
             case 0xc0:
-                if ((flags & zeroflag) == 0) {
-                    pc = popWord();
+                if ((Flags & zeroflag) == 0) {
+                    PC = PopWord();
                     cycles = 11;
                 } else {
                     cycles = 5;
                 }
                 break; //rnz
             case 0xc1:
-                bc = popWord();
+                BC = PopWord();
                 cycles = 10;
                 break; //pop b
             case 0xc2:
-                wTmp = fetchWord();
-                if ((flags & zeroflag) == 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & zeroflag) == 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jnz a16
             case 0xc3:
-                pc = fetchWord();
+                PC = FetchWord();
                 cycles = 10;
                 break; //jmp a16
             case 0xc4:
-                wTmp = fetchWord();
-                if ((flags & zeroflag) == 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & zeroflag) == 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
                 }
                 break; //cnz a16
             case 0xc5:
-                pushWord(bc);
+                PushWord(BC);
                 cycles = 11;
                 break; //push b
             case 0xc6:
-                bTmp = fetchByte();
-                wTmp = (ushort)(a + bTmp);
-                newAuxCarry = (a & 0x0f) + (bTmp & 0x0f) > 0x0f;
+                bTmp = FetchByte();
+                wTmp = (ushort)(A + bTmp);
+                newAuxCarry = (A & 0x0f) + (bTmp & 0x0f) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //adi d8
             case 0xc7:
-                pushWord(pc);
-                pc = 0x0000;
+                PushWord(PC);
+                PC = 0x0000;
                 cycles = 11;
                 break; //rst 0
             case 0xc8:
-                cycles = 5;
-                if ((flags & zeroflag) != 0) {
-                    pc = popWord();
+                if ((Flags & zeroflag) != 0) {
+                    PC = PopWord();
                     cycles = 11;
                 } else {
                     cycles = 5;
                 }
                 break; //rz
             case 0xc9:
-                pc = popWord();
+                PC = PopWord();
                 cycles = 10;
                 break; //ret
             case 0xca:
-                wTmp = fetchWord();
-                if ((flags & zeroflag) != 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & zeroflag) != 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jz a16
             case 0xcb: break;
             case 0xcc:
-                wTmp = fetchWord();
-                if ((flags & zeroflag) != 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & zeroflag) != 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
                 }
                 break; //cz a16
             case 0xcd:
-                wTmp = fetchWord();
-                pushWord(pc);
-                pc = wTmp;
+                wTmp = FetchWord();
+                PushWord(PC);
+                PC = wTmp;
                 cycles = 17;
                 break; //call
             case 0xce:
-                bTmp = fetchByte();
-                wTmp = (ushort)(a + bTmp + (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) + (bTmp & 0x0f) + (((flags & carryflag) != 0) ? 1 : 0) > 0x0f;
+                bTmp = FetchByte();
+                wTmp = (ushort)(A + bTmp + (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) + (bTmp & 0x0f) + (((Flags & carryflag) != 0) ? 1 : 0) > 0x0f;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //aci d8
             case 0xcf:
-                pushWord(pc);
-                pc = 0x0008;
+                PushWord(PC);
+                PC = 0x0008;
                 cycles = 11;
                 break; //rst 1
             case 0xd0:
                 cycles = 5;
-                if ((flags & carryflag) == 0) {
-                    pc = popWord();
+                if ((Flags & carryflag) == 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rnc
             case 0xd1:
-                de = popWord();
+                DE = PopWord();
                 cycles = 10;
                 break; //pop d
             case 0xd2:
-                wTmp = fetchWord();
-                if ((flags & carryflag) == 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & carryflag) == 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jnc a16
             case 0xd3:
-                portOutput(port: fetchByte(), value: a);
+                PortOutput(port: FetchByte(), value: A);
                 cycles = 10;
                 break; //out port8
             case 0xd4:
-                wTmp = fetchWord();
-                if ((flags & carryflag) == 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & carryflag) == 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
                 }
                 break; //cnc a16
             case 0xd5:
-                pushWord(de);
+                PushWord(DE);
                 cycles = 11;
                 break; //push d
             case 0xd6:
-                bTmp = fetchByte();
-                wTmp = (ushort)(a - bTmp);
-                newAuxCarry = (a & 0x0f) - (bTmp & 0x0f) < 0;
+                bTmp = FetchByte();
+                wTmp = (ushort)(A - bTmp);
+                newAuxCarry = (A & 0x0f) - (bTmp & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sui d8
             case 0xd7:
-                pushWord(pc);
-                pc = 0x0010;
+                PushWord(PC);
+                PC = 0x0010;
                 cycles = 11;
                 break; //rst 2
             case 0xd8:
                 cycles = 5;
-                if ((flags & carryflag) != 0) {
-                    pc = popWord();
+                if ((Flags & carryflag) != 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rc
             case 0xd9: break;
             case 0xda:
-                wTmp = fetchWord();
-                if ((flags & carryflag) != 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & carryflag) != 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jc a16
             case 0xdb:
-                a = portInput(port: fetchByte());
+                A = PortInput(port: FetchByte());
                 cycles = 10;
                 break; //in port8
             case 0xdc:
-                wTmp = fetchWord();
-                if ((flags & carryflag) != 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & carryflag) != 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
@@ -1478,99 +1589,105 @@ internal class Cpu8080A
                 break; //cc a16
             case 0xdd: break;
             case 0xde:
-                bTmp = fetchByte();
-                wTmp = (ushort)(a - bTmp - (((flags & carryflag) != 0) ? 1 : 0));
-                newAuxCarry = (a & 0x0f) - (bTmp & 0x0f) - (((flags & carryflag) != 0) ? 1 : 0) < 0;
+                bTmp = FetchByte();
+                wTmp = (ushort)(A - bTmp - (((Flags & carryflag) != 0) ? 1 : 0));
+                newAuxCarry = (A & 0x0f) - (bTmp & 0x0f) - (((Flags & carryflag) != 0) ? 1 : 0) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
-                a = unchecked((byte)wTmp);
-                setFlagsZPS(a);
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                A = unchecked((byte)wTmp);
+                SetFlagsZPS(A);
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //sbi d8
             case 0xdf:
-                pushWord(pc);
-                pc = 0x0018;
+                PushWord(PC);
+                PC = 0x0018;
                 cycles = 11;
                 break; //rst 3
             case 0xe0:
                 cycles = 5;
-                if ((flags & parityflag) == 0) {
-                    pc = popWord();
+                if ((Flags & parityflag) == 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rpo
             case 0xe1:
-                hl = popWord();
+                HL = PopWord();
                 cycles = 10;
                 break; //pop h
             case 0xe2:
-                wTmp = fetchWord();
-                if ((flags & parityflag) == 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & parityflag) == 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jpo a16
             case 0xe3:
-                //TODO?: optimize - swap instead of pop-then-push
+                //TODO: optimize? - swap instead of pop-then-push
                 //suggest implementing topofstack property, memoryword(lowbyteaddress) ref method, use (tos, hl) = (hl,tos);
-                wTmp = popWord();
-                pushWord(hl);
-                hl = wTmp;
+                //maybe not, this would get tricky in edge case with SP=0xffff (however unlikely, aside from 33 C7 memory clear program
+                //which is INX SP, RST 0)
+                wTmp = PopWord();
+                PushWord(HL);
+                HL = wTmp;
                 cycles = 18;
                 break; //xtlh
             case 0xe4:
-                wTmp = fetchWord();
-                if ((flags & parityflag) == 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & parityflag) == 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
                 }
                 break; //cpo a16
             case 0xe5:
-                pushWord(hl);
+                PushWord(HL);
                 cycles = 11;
                 break; //push h
             case 0xe6:
-                a = (byte)(a & fetchByte());
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~(carryflag | auxcarryflag))); //CY,AC
+                A = (byte)(A & FetchByte());
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~(carryflag | auxcarryflag))); //CY,AC
                 cycles = 7;
                 break; //ani d8
             case 0xe7:
-                pushWord(pc);
-                pc = 0x0020;
+                PushWord(PC);
+                PC = 0x0020;
                 cycles = 11;
                 break; //rst 4
             case 0xe8:
                 cycles = 5;
-                if ((flags & parityflag) != 0) {
-                    pc = popWord();
+                if ((Flags & parityflag) != 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rpe
             case 0xe9:
-                pc = hl;
+                PC = HL;
                 cycles = 5;
                 break; //pchl
             case 0xea:
-                wTmp = fetchWord();
-                if ((flags & parityflag) != 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & parityflag) != 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jpe a16
             case 0xeb:
                 //wTmp = hl;
                 //hl = de;
                 //de = wTmp;
-                (hl, de) = (de, hl); //curious, does this optimize to the same code?  does it compile slower?
+                (HL, DE) = (DE, HL); //curious, does this optimize to the same code?  does it compile slower?
                 //cycles = 4;
                 break; //xchg (DE, HL)
             case 0xec:
-                wTmp = fetchWord();
-                if ((flags & parityflag) != 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & parityflag) != 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
@@ -1578,89 +1695,94 @@ internal class Cpu8080A
                 break; //cpe a16
             case 0xed: break;
             case 0xee:
-                a = (byte)(a ^ fetchByte());
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~(carryflag | auxcarryflag))); //CY,AC
+                A = (byte)(A ^ FetchByte());
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~(carryflag | auxcarryflag))); //CY,AC
                 cycles = 7;
                 break; //xri d8 (note: intel docs are inconsistent on resulting C, AC flags for many arithmetic and logical operators)
             case 0xef:
-                pushWord(pc);
-                pc = 0x0028;
+                PushWord(PC);
+                PC = 0x0028;
                 cycles = 11;
                 break; //rst 5
             case 0xf0:
                 cycles = 5;
-                if ((flags & signflag) == 0) {
-                    pc = popWord();
+                if ((Flags & signflag) == 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rp
             case 0xf1:
-                wTmp = popWord();
+                wTmp = PopWord();
                 //set fixed flag bits appropriately (flags are in low byte, a in highbyte)
                 wTmp = (ushort)((wTmp | alwaysoneflags) & ~alwayszeroflags);
-                aflags = wTmp;
+                PSW = wTmp;
                 cycles = 10;
                 break; //pop psw
             case 0xf2:
-                wTmp = fetchWord();
-                if ((flags & signflag) == 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & signflag) == 0) {
+                    PC = wTmp;
+                }
                 cycles = 10;
                 break; //jp a16
             case 0xf3:
-                interruptsEnabled = false;
+                IsInterruptsEnabled = false;
                 //cycles = 4;
                 break; //di
             case 0xf4:
-                wTmp = fetchWord();
-                if ((flags & signflag) == 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & signflag) == 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
                 }
                 break; //cp a16
             case 0xf5:
-                pushWord(aflags);
+                PushWord(PSW);
                 cycles = 11;
                 break; //push psw
             case 0xf6:
-                a = (byte)(a | fetchByte());
-                setFlagsZPS(a);
-                flags = (byte)(flags & (~(carryflag | auxcarryflag))); //CY,AC
+                A = (byte)(A | FetchByte());
+                SetFlagsZPS(A);
+                Flags = (byte)(Flags & (~(carryflag | auxcarryflag))); //CY,AC
                 cycles = 7;
                 break; //ori d8
             case 0xf7:
-                pushWord(pc);
-                pc = 0x0030;
+                PushWord(PC);
+                PC = 0x0030;
                 cycles = 11;
                 break; //rst 6
             case 0xf8:
                 cycles = 5;
-                if ((flags & signflag) != 0) {
-                    pc = popWord();
+                if ((Flags & signflag) != 0) {
+                    PC = PopWord();
                     cycles = 11;
                 }
                 break; //rm
             case 0xf9:
-                sp = hl;
+                SP = HL;
                 cycles = 5;
                 break; //sphl
             case 0xfa:
-                wTmp = fetchWord();
-                if ((flags & signflag) != 0) pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & signflag) != 0) {
+                    PC = wTmp;
+                }
+
                 cycles = 10;
                 break; //jm a16
             case 0xfb:
-                interruptsEnabled = true;
+                IsInterruptsEnabled = true;
                 //cycles = 4;
                 break; //ei
             case 0xfc:
-                wTmp = fetchWord();
-                if ((flags & signflag) != 0) {
-                    pushWord(pc);
-                    pc = wTmp;
+                wTmp = FetchWord();
+                if ((Flags & signflag) != 0) {
+                    PushWord(PC);
+                    PC = wTmp;
                     cycles = 17;
                 } else {
                     cycles = 11;
@@ -1668,20 +1790,20 @@ internal class Cpu8080A
                 break; //cm a16
             case 0xfd: break;
             case 0xfe:
-                bTmp = fetchByte();
-                wTmp = (ushort)(a - bTmp);
-                newAuxCarry = (a & 0x0f) - (bTmp & 0x0f) < 0;
+                bTmp = FetchByte();
+                wTmp = (ushort)(A - bTmp);
+                newAuxCarry = (A & 0x0f) - (bTmp & 0x0f) < 0;
                 newCarry = (wTmp & 0xff00) != 0;
                 //a = unchecked((byte)wTmp);
-                setFlagsZPS(unchecked((byte)wTmp));
-                flags = (byte)((flags & (~(carryflag | auxcarryflag)))
+                SetFlagsZPS(unchecked((byte)wTmp));
+                Flags = (byte)((Flags & (~(carryflag | auxcarryflag)))
                                | (newCarry ? carryflag : 0)
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 cycles = 7;
                 break; //cpi d8
             case 0xff:
-                pushWord(pc);
-                pc = 0x0038;
+                PushWord(PC);
+                PC = 0x0038;
                 cycles = 11;
                 break; //rst 7
                        //default: break;
@@ -1689,114 +1811,34 @@ internal class Cpu8080A
         return cycles;
     }
 
-    /*
-
-    void CPU::jumpTo(const WORD address) {
-    this->putIP(address);
-    }
-
-    void CPU::run() {
-
-    }
-
-    void CPU::stop() {
-
-    }
-
-    void CPU::singleStep() {
-
-    }
-
-    void CPU::enableBreakpoints() {
-
-    }
-
-    void CPU::disableBreakpoints() {
-
-    }
-
-    bool CPU::isRunning() {
-    return this->running;
-    }
-
-    bool CPU::isBreakpointsEnabled() {
-    return this->breakpointsEnabled;
-    }
-
-    */
-    byte fetchByte() { //can c# designate or hint an inline function/method?
-        return memory[pc++];
-    }
-
-    ushort fetchWord()
-    {
-        //return (ushort)(fetchByte() | (ushort)(fetchByte() << 8));
-        var newPC = pc;
-        var lowByte = memory[newPC++];
-        var highByte = memory[newPC++];
-        pc = newPC;
-        return makeWord(highByte, lowByte);
-    }
-
-    void pushByte(byte b) {
-        memory[--sp] = b;
-    }
-
-    void pushWord(ushort w) {
-        var newSP = sp; //minimizing SP get/put calls for speed
-        memory[--newSP] = highByte(w);
-        memory[--newSP] = lowByte(w);
-        sp = newSP;
-    }
-
-    byte popByte() {
-        return memory[sp++];
-    }
-
-    ushort popWord() {
-        var newSP = sp;
-        var lowByte = memory[newSP++];
-        var highByte = memory[newSP++];
-        sp = newSP;
-        return makeWord(highByte, lowByte);
-    }
-
-    bool parityEven(ushort d)
-    {
-        var rslt = true;
-        while (d != 0)
-        {
-            if ((d & 1) != 0) rslt = !rslt;
-            d = (ushort)(d >> 1);
+    private void SetFlagsZPS(byte r) {
+        var tmpFlags = (byte)(Flags & (~(zeroflag | parityflag | signflag)));
+        if (r == 0) {
+            tmpFlags |= zeroflag;
         }
-        return rslt;
+        if (BitManipulation.ParityEven(r)) {
+            tmpFlags |= parityflag;
+        }
+        if ((r & 0x80) != 0) {
+            tmpFlags |= signflag;
+        }
+        Flags = tmpFlags;
     }
+    #endregion Execution
 
-    void setFlagsZPS(byte r)
-    {
-        var tmpFlags = (byte)(flags & (~(zeroflag | parityflag | signflag)));
-        if (r == 0) tmpFlags |= zeroflag;
-        if (parityEven(r)) tmpFlags |= parityflag;
-        if ((r & 0x80) != 0) tmpFlags |= signflag;
-        flags = tmpFlags;
-    }
-
-    void portOutput(byte port, byte value)
-    {
+    #region Input/Output
+    private void PortOutput(byte port, byte value) {
         //TODOMAYBE: keep an array or dictionary of outputdelegates keyed by port#?
         if (outputter is not null) {
-            outputter(port, value);    
+            outputter(port, value);
         }
     }
 
-    byte portInput(byte port)
-    {
+    private byte PortInput(byte port) {
         //TODOMAYBE: keep an array or dictionary of inputdelegates keyed by port#?
-        if (inputter is not null)
-        {
+        if (inputter is not null) {
             return inputter(port);
-        }
-        else {
+        } else {
             return 0xff;
         }
     }
@@ -1805,4 +1847,5 @@ internal class Cpu8080A
     public OutputAction? outputter;
     public delegate byte InputAction(byte port);
     public InputAction? inputter;
+    #endregion Input/Output
 }
