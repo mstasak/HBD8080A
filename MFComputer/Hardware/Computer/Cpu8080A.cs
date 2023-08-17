@@ -1,5 +1,5 @@
 ﻿namespace MFComputer.Hardware.Computer;
-internal class Cpu8080A {
+public class Cpu8080A {
 
     #region Flag Bits
     /// <summary>
@@ -1811,6 +1811,12 @@ internal class Cpu8080A {
         return cycles;
     }
 
+    /// <summary>
+    /// Calculate the zero, sign, and parity flags based on value r.  Update Flags with result.
+    /// Carry and Aux Carry cannot be calculated without original additional data (opcode and
+    /// operands and perhaps (esp. for DAA instruction) AC and C flags before instruction).
+    /// </summary>
+    /// <param name="r">The value used to set these flags.</param>
     private void SetFlagsZPS(byte r) {
         var tmpFlags = (byte)(Flags & (~(zeroflag | parityflag | signflag)));
         if (r == 0) {
@@ -1827,15 +1833,31 @@ internal class Cpu8080A {
     #endregion Execution
 
     #region Input/Output
+    /// <summary>
+    /// Send port output data to any enrolled delegates.
+    /// </summary>
+    /// <param name="port">Port specified by "OUT" instruction.</param>
+    /// <param name="value">Value from accumulator.</param>
     private void PortOutput(byte port, byte value) {
-        //TODOMAYBE: keep an array or dictionary of outputdelegates keyed by port#?
+        //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
+        //This would optimize output on a system with numerous ports used.
         if (outputter is not null) {
             outputter(port, value);
         }
     }
 
+
+    // PROBLEM: Making a conceptual error here, as there is no polling mechanism to invoke all input delegates and capture return from only the right one.
+    // I guess we should have just one delegate per port, or maybe use a ref parameter to let each delegate indicate whether they returned a response or just said "not my port"?????
+    // (I'm probably abusing the terminology as well)
+    /// <summary>
+    /// Request input port data from any enrolled delegates.
+    /// </summary>
+    /// <param name="port">Port specified by "IN" instruction.</param>
+    /// <returns>Data from input source, to be stored into accumulator.</returns>
     private byte PortInput(byte port) {
-        //TODOMAYBE: keep an array or dictionary of inputdelegates keyed by port#?
+        //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
+        //This would optimize input on a system with numerous ports used.
         if (inputter is not null) {
             return inputter(port);
         } else {
@@ -1848,4 +1870,12 @@ internal class Cpu8080A {
     public delegate byte InputAction(byte port);
     public InputAction? inputter;
     #endregion Input/Output
+
 }
+
+
+//TODO: remove unchecked statements and expressions, as this is default mode
+//TODO: add readonly range checks to all memory writes
+//TODO: fix input issue
+//TODO: run on background thread, with external control inputs to change machine state (run/stop/throttle/single step/startup/shutdown/reset)
+//TODO: (in XAML) set up a "front panel" to simulate input switches, output leds, PC and flag displays, and a small region of memory; include single step button

@@ -4,22 +4,42 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:src="using:MFComputer.Views"
     mc:Ignorable="d">
 
-    <Grid x:Name="ContentArea">
+    <Grid x:Name="ContentArea" Background="#ff1c1c1c" BorderBrush="LightBlue" BorderThickness="5">
         <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="128" />
+            <RowDefinition Height="128" />
+            <RowDefinition Height="128" />
+            <RowDefinition Height="128" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="2*" />
+        </Grid.ColumnDefinitions>
+        <src:LEDRow TopTitle="Programmed Output Port FF" Grid.Row="0" Grid.Column="0"/>
+        <src:LEDRow TopTitle="(to be determined)" Grid.Row="1" Grid.Column="0"/>
+        <src:LEDRow TopTitle="High Address Byte" Grid.Row="2" Grid.Column="0"/>
+        <src:SwitchRow TopTitle="High Address Byte - Programmed Data Input Port FF" Grid.Row="3" Grid.Column="0"/>
 
-        <TextBlock
+        <!--<TextBlock
             Grid.Row="0"
             x:Uid="Main_Title"
             Style="{StaticResource PageTitleStyle}" />
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="0" Grid.Column="0">
             <TextBlock Text="Huh?" />
         </Grid>
-        
+        <Grid Grid.Row="1" Grid.Column="0" 
+         Margin="0,50,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <src:NameReporter Grid.Row="0"/>
+            <src:NameReporter Grid.Row="1" Margin="0,15,0,0"/>
+        </Grid>-->
     </Grid>
 </Page>
