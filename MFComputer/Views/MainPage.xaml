@@ -7,22 +7,28 @@
     xmlns:src="using:MFComputer.Views"
     mc:Ignorable="d">
 
-    <Grid x:Name="ContentArea" Background="#ff1c1c1c" BorderBrush="LightBlue" BorderThickness="5">
+    <Grid x:Name="ContentArea" Background="#ff1e1e1e" BorderBrush="LightBlue" BorderThickness="5">
         <Grid.RowDefinitions>
-            <RowDefinition Height="128" />
-            <RowDefinition Height="128" />
-            <RowDefinition Height="128" />
-            <RowDefinition Height="128" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="200" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*" />
-            <ColumnDefinition Width="3*" />
-            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="650" />
+            <ColumnDefinition Width="650" />
+            <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
         <src:LEDRow TopTitle="Programmed Output Port FF" Grid.Row="0" Grid.Column="0"/>
-        <src:LEDRow TopTitle="(to be determined)" Grid.Row="1" Grid.Column="0"/>
+        <src:LEDRow TopTitle="(to be determined?)" Grid.Row="1" Grid.Column="0"/>
         <src:LEDRow TopTitle="High Address Byte" Grid.Row="2" Grid.Column="0"/>
-        <src:SwitchRow TopTitle="High Address Byte - Programmed Data Input Port FF" Grid.Row="3" Grid.Column="0"/>
+        <src:SwitchRow TopTitle="High Address Byte - Programmed Data Input Port FF" Grid.Row="3" Grid.Column="0"
+                       ButtonLabels="A15,A14,A13,A12,A11,A10,A9,A8"/>
+
+        <src:LEDRow TopTitle="Status" Grid.Row="1" Grid.Column="1"/>
+        <src:LEDRow TopTitle="Low Address Byte" Grid.Row="2" Grid.Column="1"/>
+        <src:SwitchRow TopTitle="Low Address Byte" Grid.Row="3" Grid.Column="1"
+                       ButtonLabels="Adr7,A6,A5,A4,A3,A2,A1,A0"/>
 
         <!--<TextBlock
             Grid.Row="0"

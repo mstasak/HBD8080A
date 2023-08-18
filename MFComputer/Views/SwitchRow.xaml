@@ -8,7 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Width="400" Height="100" BorderBrush="DarkGray" BorderThickness="3" Background="Black">
+    <Grid Loaded="Grid_Loaded" x:Name="Grid" Width="600" Height="170" BorderBrush="DarkGray" BorderThickness="3" Background="#ff404040">
         <Grid.RowDefinitions>
             <RowDefinition Height="AUTO"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
@@ -26,14 +26,14 @@
             <!--<ColumnDefinition Width="3*"></ColumnDefinition>-->
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="8" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}">Data Bus</TextBlock>
-        <Ellipse Grid.Row="1" Grid.Column="0" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="1" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="2" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="3" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="4" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="5" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="6" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="7" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Image Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
+        <Image Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
+        <Image Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
+        <Image Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
+        <Image Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
+        <Image Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
+        <Image Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
+        <Image Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
         <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" Foreground="White">D7</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" Foreground="White">D6</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" Foreground="White">D5</TextBlock>

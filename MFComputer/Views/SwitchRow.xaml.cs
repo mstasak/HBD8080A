@@ -19,7 +19,16 @@ using Windows.Foundation.Collections;
 namespace MFComputer.Views;
 public sealed partial class SwitchRow : UserControl {
     public string TopTitle { get; set; } = "Title";
+    public string ButtonLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
     public SwitchRow() {
         this.InitializeComponent();
+    }
+
+    private void Grid_Loaded(object sender, RoutedEventArgs e) {
+        var labels = ButtonLabels.Split(',');
+        var i = 0;
+        foreach (var tblock in Grid.Children.Where(e => Grid.GetRow((FrameworkElement)e) == 2).OfType<TextBlock>()) {
+            tblock.Text = labels[i++];
+        }
     }
 }

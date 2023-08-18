@@ -15,6 +15,12 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="Assets\ImsaiFP.png" />
+    <Content Remove="Assets\rockerswitches.pdn" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Assets\rockerswitchoff.png" />
+    <None Remove="Assets\rockerswitchon.png" />
     <None Remove="Views\LEDRow.xaml" />
     <None Remove="Views\NameReporter.xaml" />
     <None Remove="Views\SwitchRow.xaml" />
