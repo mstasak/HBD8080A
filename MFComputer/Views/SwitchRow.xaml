@@ -26,14 +26,70 @@
             <!--<ColumnDefinition Width="3*"></ColumnDefinition>-->
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="8" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}">Data Bus</TextBlock>
-        <Image Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
-        <Image Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
-        <Image Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
-        <Image Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
-        <Image Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
-        <Image Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
-        <Image Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" Source="/Assets/rockerswitchon.png"/>
-        <Image Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" Source="/Assets/rockerswitchoff.png"/>
+        <ToggleSwitch Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
+        <ToggleSwitch Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" >
+            <ToggleSwitch.OffContent>
+                <Image Source="/Assets/rockerswitchoff.png"/>
+            </ToggleSwitch.OffContent>
+            <ToggleSwitch.OnContent>
+                <Image Source="/Assets/rockerswitchon.png"/>
+            </ToggleSwitch.OnContent>
+        </ToggleSwitch>
         <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" Foreground="White">D7</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" Foreground="White">D6</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" Foreground="White">D5</TextBlock>

@@ -25,4 +25,12 @@ public sealed partial class LEDRow : UserControl {
         this.InitializeComponent();
 
     }
+
+    private void Grid_Loaded(object sender, RoutedEventArgs e) {
+        var labels = ButtonLabels.Split(',');
+        var i = 0;
+        foreach (var tblock in Grid.Children.Where(e => Grid.GetRow((FrameworkElement)e) == 2).OfType<TextBlock>()) {
+            tblock.Text = labels[i++];
+        }
+    }
 }

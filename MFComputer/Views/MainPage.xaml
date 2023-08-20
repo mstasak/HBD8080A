@@ -19,17 +19,25 @@
             <ColumnDefinition Width="650" />
             <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
-        <src:LEDRow TopTitle="Programmed Output Port FF" Grid.Row="0" Grid.Column="0"/>
-        <src:LEDRow TopTitle="(to be determined?)" Grid.Row="1" Grid.Column="0"/>
-        <src:LEDRow TopTitle="High Address Byte" Grid.Row="2" Grid.Column="0"/>
-        <src:SwitchRow TopTitle="High Address Byte - Programmed Data Input Port FF" Grid.Row="3" Grid.Column="0"
+        <src:LEDRow TopTitle="Output Port FF" Grid.Row="0" Grid.Column="0"
+                       ButtonLabels="O7,O6,O5,O4,O3,O2,O1,O0"/>
+        <src:LEDRow TopTitle="TBD: general status" Grid.Row="1" Grid.Column="0"
+                       ButtonLabels="Power,Run,Halt,Int Enb,FS,FZ,FC,FAC"/>
+        <src:LEDRow TopTitle="High Address" Grid.Row="2" Grid.Column="0"
                        ButtonLabels="A15,A14,A13,A12,A11,A10,A9,A8"/>
+        <src:SwitchRow TopTitle="High Address - Input Port FF" Grid.Row="3" Grid.Column="0"
+                       ButtonLabels="A15/I7,A14/I6,A13/I5,A12/I4,A11/I3,A10/I2,A9/I1,A8/I0"/>
 
-        <src:LEDRow TopTitle="Status" Grid.Row="1" Grid.Column="1"/>
-        <src:LEDRow TopTitle="Low Address Byte" Grid.Row="2" Grid.Column="1"/>
-        <src:SwitchRow TopTitle="Low Address Byte" Grid.Row="3" Grid.Column="1"
-                       ButtonLabels="Adr7,A6,A5,A4,A3,A2,A1,A0"/>
+        <src:LEDRow TopTitle="Memory Data" Grid.Row="1" Grid.Column="1"
+                       ButtonLabels="M7,M6,M5,M4,M3,M2,M1,M0"/>
+        <src:LEDRow TopTitle="Low Address" Grid.Row="2" Grid.Column="1"
+                       ButtonLabels="A7,A6,A5,A4,A3,A2,A1,A0"/>
+        <src:SwitchRow TopTitle="Low Address / Memory Data" Grid.Row="3" Grid.Column="1"
+                       ButtonLabels="A7/M7,A6/M6,A5/M5,A4/M4,A3/M3,A2/M2,A1/M1,A0/M0"/>
 
+        <TextBlock Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" FontSize="48" FontWeight="ExtraBold" FontFamily="Script"  Foreground="Magenta">MFComputer 8080A 50th Anniversary</TextBlock>
+        <TextBlock Grid.Row="2" Grid.Column="2" Foreground="Gray">TBD: essential status</TextBlock>
+        <TextBlock Grid.Row="3" Grid.Column="2" Foreground="Gray" TextWrapping="Wrap">Switches: power, reset, run/stop, singlestep,examine+next, deposit+next, turbo/2MHz</TextBlock>
         <!--<TextBlock
             Grid.Row="0"
             x:Uid="Main_Title"
