@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--Construct and present a row of up to eight mixed buttons and switches.
+A byte property will contain the bit values for on-off switches, and events will be fired for button presses.
+A single label is shown above the buttons and switches, and an item label below each button or switch-->
 <UserControl
-    x:Class="MFComputer.Views.SwitchRow"
+    x:Class="MFComputer.Views.SwitchButtonRow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:MFComputer.Views"
@@ -8,8 +11,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Loaded="Grid_Loaded" x:Name="Grid" Width="600" Height="170"
-          BorderBrush="DarkGray" BorderThickness="3" Background="#ff404040">
+    <Grid Loaded="Grid_Loaded" x:Name="Grid" Width="450" Height="170" BorderBrush="DarkGray" BorderThickness="3"
+          Background="#ff404040">
         <Grid.RowDefinitions>
             <RowDefinition Height="AUTO"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
@@ -19,15 +22,9 @@
             <ColumnDefinition Width="1*"></ColumnDefinition>
             <ColumnDefinition Width="1*"></ColumnDefinition>
             <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <ColumnDefinition Width="1*"></ColumnDefinition>
-            <!--<ColumnDefinition Width="3*"></ColumnDefinition>-->
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="8" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}">Data Bus</TextBlock>
-        <ToggleSwitch Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" >
+        <TextBlock x:Name="GridLabel" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="1" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}"/>
+        <!--<ToggleSwitch x:Name="ModelToggleSwitch" Grid.Column="0" HorizontalAlignment="Center" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -35,22 +32,12 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" >
-            <ToggleSwitch.OffContent>
-                <Image Source="/Assets/rockerswitchoff.png"/>
-            </ToggleSwitch.OffContent>
-            <ToggleSwitch.OnContent>
-                <Image Source="/Assets/rockerswitchon.png"/>
-            </ToggleSwitch.OnContent>
-        </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" >
-            <ToggleSwitch.OffContent>
-                <Image Source="/Assets/rockerswitchoff.png"/>
-            </ToggleSwitch.OffContent>
-            <ToggleSwitch.OnContent>
-                <Image Source="/Assets/rockerswitchon.png"/>
-            </ToggleSwitch.OnContent>
-        </ToggleSwitch>
+        <Button x:Name="ModelPushbutton" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" >
+            <Image Source="/Assets/pushbutton.png"/>
+        </Button>
+        <Button x:Name="ModelToggleButton" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" >
+            <Image Source="/Assets/bidirocker.png"/>
+        </Button>
         <ToggleSwitch Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
@@ -98,6 +85,6 @@
         <TextBlock Grid.Row="2" Grid.Column="4" HorizontalAlignment="Center" Foreground="White">D3</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="5" HorizontalAlignment="Center" Foreground="White">D2</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="6" HorizontalAlignment="Center" Foreground="White">D1</TextBlock>
-        <TextBlock Grid.Row="2" Grid.Column="7" HorizontalAlignment="Center" Foreground="White">D0</TextBlock>
+        <TextBlock Grid.Row="2" Grid.Column="7" HorizontalAlignment="Center" Foreground="White">D0</TextBlock>-->
     </Grid>
 </UserControl>

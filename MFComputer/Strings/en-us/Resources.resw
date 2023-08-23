@@ -121,4 +121,11 @@
     <value>Settings</value>
     <comment>Page title for SettingsPage</comment>
   </data>
+  <data name="ShellMenuItem_Views_Testbed.Text" xml:space="preserve">
+    <value>Testbed</value>
+  </data>
+  <data name="Testbed_Title.Text" xml:space="preserve">
+    <value>Testbed</value>
+    <comment>Page title for TestbedPage</comment>
+  </data>
 </root>

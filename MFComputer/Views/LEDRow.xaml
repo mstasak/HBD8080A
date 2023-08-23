@@ -8,7 +8,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Loaded="Grid_Loaded" x:Name="Grid" Width="600" Height="100" BorderBrush="DarkGray" BorderThickness="3" Background="Black">
+    <Grid Loaded="Grid_Loaded" x:Name="Grid" Width="600" Height="100"
+          BorderBrush="DarkGray" BorderThickness="3" Background="Black">
         <Grid.RowDefinitions>
             <RowDefinition Height="AUTO"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>

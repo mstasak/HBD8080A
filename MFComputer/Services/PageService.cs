@@ -17,6 +17,7 @@ public class PageService : IPageService
         Configure<MainViewModel, MainPage>();
         Configure<StatusViewModel, StatusPage>();
         Configure<SettingsViewModel, SettingsPage>();
+        Configure<TestbedViewModel, TestbedPage>();
     }
 
     public Type GetPageType(string key)

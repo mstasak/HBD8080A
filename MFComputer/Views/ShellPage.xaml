@@ -35,6 +35,7 @@
                     <MenuBarItem.Items>
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Main" Command="{x:Bind ViewModel.MenuViewsMainCommand}" />
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Status" Command="{x:Bind ViewModel.MenuViewsStatusCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Testbed" Command="{x:Bind ViewModel.MenuViewsTestbedCommand}" />
                     </MenuBarItem.Items>
                 </MenuBarItem>
             </MenuBar>

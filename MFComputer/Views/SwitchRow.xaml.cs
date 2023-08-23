@@ -22,7 +22,7 @@ public sealed partial class SwitchRow : UserControl {
     public string ButtonLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
     public int NumSwitches { get; set; } = 8;
     public SwitchRow() {
-        this.InitializeComponent();
+        InitializeComponent();
     }
 
     private void Grid_Loaded(object sender, RoutedEventArgs e) {

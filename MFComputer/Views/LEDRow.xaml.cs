@@ -24,7 +24,7 @@ public sealed partial class LEDRow : UserControl {
     public string ButtonLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
     public int LEDCount { get; set; } = 8;
     public LEDRow() {
-        this.InitializeComponent();
+        InitializeComponent();
 
     }
 
