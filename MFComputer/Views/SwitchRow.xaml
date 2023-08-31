@@ -27,7 +27,7 @@
             <!--<ColumnDefinition Width="3*"></ColumnDefinition>-->
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="8" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}">Data Bus</TextBlock>
-        <ToggleSwitch Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch7On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}">
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -35,7 +35,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch6On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -43,7 +43,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch5On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -51,7 +51,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch4On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -59,7 +59,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch3On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -67,7 +67,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center"  IsOn="{x:Bind Path=SwitchBank0.Switch2On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -75,7 +75,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="6" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch1On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>
@@ -83,7 +83,7 @@
                 <Image Source="/Assets/rockerswitchon.png"/>
             </ToggleSwitch.OnContent>
         </ToggleSwitch>
-        <ToggleSwitch Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" >
+        <ToggleSwitch Grid.Row="1" Grid.Column="7" HorizontalAlignment="Center" IsOn="{x:Bind Path=SwitchBank0.Switch0On,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}" >
             <ToggleSwitch.OffContent>
                 <Image Source="/Assets/rockerswitchoff.png"/>
             </ToggleSwitch.OffContent>

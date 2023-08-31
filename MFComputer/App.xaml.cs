@@ -64,9 +64,14 @@ public partial class App : Application
             // Core Services
             services.AddSingleton<IFileService, FileService>();
 
+            //Emulator
+            services.AddSingleton<Hardware.Computer.Cpu8080A>();
+
             // Views and ViewModels
-            services.AddTransient<TestbedViewModel>();
-            services.AddTransient<TestbedPage>();
+            services.AddSingleton<TestbedViewModel>();
+            services.AddSingleton<TestbedPage>();
+            services.AddSingleton<FrontPanelViewModel>();
+            services.AddSingleton<FrontPanelPage>();
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<SettingsPage>();
             services.AddTransient<StatusViewModel>();

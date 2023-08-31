@@ -6,20 +6,58 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
+    <!--<TextBlock
+        Grid.Row="0"
+        x:Uid="Testbed_Title"
+        Style="{StaticResource PageTitleStyle}" />-->
+
     <Grid x:Name="ContentArea">
         <Grid.RowDefinitions>
-            <RowDefinition Height="48" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="4*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="0" Grid.Column="0">Set LEDs</TextBlock>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+            <TextBlock>HexValue</TextBlock>
+            <TextBox x:Name="txtLEDValue" PlaceholderText="e.g. a7"></TextBox>
+        </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="10">
+            <Button Click="Button1_Click">Write to bank 1 (Output)</Button>
+            <Button Click="Button2_Click">Write to bank 2 (Flags)</Button>
+            <Button Click="Button3_Click">Write to bank 3 (Data)</Button>
+            <Button Click="Button4_Click">Write to bank 4 (High Addr/Input)</Button>
+            <Button Click="Button5_Click">Write to bank 5 (Low Address)</Button>
+            <Button Click="Button6_Click">Write to bank 6 (Status)</Button>
+        </StackPanel>
 
-        <TextBlock
-            Grid.Row="0"
-            x:Uid="Testbed_Title"
-            Style="{StaticResource PageTitleStyle}" />
+        <TextBlock Grid.Row="1" Grid.Column="0">Get Switches</TextBlock>
 
-        <Grid Grid.Row="1">
-            
-        </Grid>
-        
+
+        <TextBlock Grid.Row="2" Grid.Column="0">PushButton Event</TextBlock>
+
+
+        <TextBlock Grid.Row="3" Grid.Column="0">ToggleButton Event</TextBlock>
+
+
+        <TextBlock Grid.Row="4" Grid.Column="0">?</TextBlock>
+        <TextBlock Grid.Row="5" Grid.Column="0">?</TextBlock>
+        <TextBlock Grid.Row="6" Grid.Column="0">?</TextBlock>
+        <TextBlock Grid.Row="7" Grid.Column="0">?</TextBlock>
+        <TextBlock Grid.Row="8" Grid.Column="0">?</TextBlock>
+        <TextBlock Grid.Row="9" Grid.Column="0">?</TextBlock>
     </Grid>
+        
 </Page>

@@ -23,14 +23,20 @@ using Windows.UI;
 
 namespace MFComputer.Views;
 public sealed partial class SwitchButtonRow : UserControl {
+    public static readonly DependencyProperty SwitchValuesProperty = DependencyProperty.Register(
+    "SwitchValues", typeof(byte), typeof(SwitchButtonRow), new PropertyMetadata(null));
+
     public int NumControls { get; set; } = 0;
     public string ControlTypes { get; set; } = "Button,ToggleButton,ToggleSwitch";
     public string TopTitle { get; set; } = "Title";
     public string ControlLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
     public int SwitchValues { get; set; } = 0;
 
+    public SwitchBank SwitchBank0 { get; set; }
+
     public SwitchButtonRow() {
         InitializeComponent();
+        SwitchBank0 = new SwitchBank();
     }
 
     private void Grid_Loaded(object sender, RoutedEventArgs e) {

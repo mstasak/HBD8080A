@@ -18,6 +18,7 @@ public class PageService : IPageService
         Configure<StatusViewModel, StatusPage>();
         Configure<SettingsViewModel, SettingsPage>();
         Configure<TestbedViewModel, TestbedPage>();
+        Configure<FrontPanelViewModel, FrontPanelPage>();
     }
 
     public Type GetPageType(string key)

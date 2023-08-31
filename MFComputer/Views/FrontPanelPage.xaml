@@ -1,0 +1,69 @@
+﻿    <Page
+    x:Class="MFComputer.Views.FrontPanelPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:src="using:MFComputer.Views"
+    mc:Ignorable="d">
+
+    <Grid x:Name="ContentArea" Background="#ff1e1e1e" BorderBrush="LightBlue" BorderThickness="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="110" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="110" />
+            <RowDefinition Height="200" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="70" />
+            <RowDefinition Height="70" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="650" />
+            <ColumnDefinition Width="650" />
+            <ColumnDefinition Width="500" />
+        </Grid.ColumnDefinitions>
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="Output Port FF" Grid.Row="0" Grid.Column="0"
+                    ButtonLabels="O7,O6,O5,O4,O3,O2,O1,O0" LedValues="{x:Bind ViewModel.OutputLEDs, Mode=OneWay}"/>
+        <!--<src:LEDRow TopTitle="Flags" Grid.Row="1" Grid.Column="0" LEDCount="6"
+                       ButtonLabels="x,x,Int Enb,Z,S,P,CY,AC" />-->
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="Flags" Grid.Row="1" Grid.Column="0" LedCount="6"
+                       ButtonLabels="Int Enabled,Zero,Sign,Parity,Carry,Aux Carry,x,x" LedValues="{x:Bind ViewModel.FlagLEDs, Mode=OneWay}"/>
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="High Address" Grid.Row="2" Grid.Column="0"
+                       ButtonLabels="A15,A14,A13,A12,A11,A10,A9,A8" LedValues="{x:Bind ViewModel.AddressHighLEDs, Mode=OneWay}"/>
+        <src:SwitchRow x:Name="HighAddressAndInputSwitches" SwitchValues="{x:Bind Path=ViewModel.AddressHighInputSwitches,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                       HorizontalAlignment="Right" TopTitle="High Address - Input Port FF" Grid.Row="3" Grid.Column="0"
+                       ButtonLabels="A15/I7,A14/I6,A13/I5,A12/I4,A11/I3,A10/I2,A9/I1,A8/I0" />
+
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="Memory Data" Grid.Row="1" Grid.Column="1"
+                       ButtonLabels="M7,M6,M5,M4,M3,M2,M1,M0" LedValues="{x:Bind ViewModel.MemoryDataLEDs, Mode=OneWay}" />
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="Low Address" Grid.Row="2" Grid.Column="1"
+                       ButtonLabels="A7,A6,A5,A4,A3,A2,A1,A0" LedValues="{x:Bind ViewModel.AddressLowLEDs, Mode=OneWay}"/>
+        <src:SwitchRow SwitchValues="{x:Bind Path=ViewModel.AddressLowDataSwitches,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                       HorizontalAlignment="Right" TopTitle="Low Address / Memory Data" Grid.Row="3" Grid.Column="1"
+                       ButtonLabels="A7/M7,A6/M6,A5/M5,A4/M4,A3/M3,A2/M2,A1/M1,A0/M0" />
+
+        <Grid Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <TextBlock HorizontalAlignment="Right" FontSize="48" FontWeight="ExtraBold" FontFamily="Script"  Foreground="LightBlue">MFComputer 8080A 50th Anniversary</TextBlock>
+        </Grid>
+        
+        <!--<TextBlock Grid.Row="2" Grid.Column="2" Foreground="Gray">TBD: essential status</TextBlock>-->
+        <src:LEDRow HorizontalAlignment="Right" TopTitle="Status" Grid.Row="2" Grid.Column="2" LedCount="3"
+                       ButtonLabels="Turbo,Halt,Power,x,x,x,x,x" LedValues="{x:Bind ViewModel.StatusLEDs, Mode=OneWay}" />
+
+        <!--<TextBlock Grid.Row="3" Grid.Column="2" Foreground="Gray" TextWrapping="Wrap">Switches: power, reset, run/stop, singlestep,examine+next, deposit+next, turbo/2MHz</TextBlock>-->
+        <src:SwitchButtonRow SwitchValues="{x:Bind Path=ViewModel.ControlSwitches,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
+                             HorizontalAlignment="Right" TopTitle="Control" Grid.Row="3" Grid.Column="2" NumControls="6"
+                             ControlTypes="ToggleButton,ToggleButton,ToggleButton,Button,Button,ToggleSwitch" 
+                             ControlLabels="Ex/ExNx,Dp/DpNxt,Run/Stop,SnglStp,Reset,Pwr On/Off" />
+        <Button Grid.Row="4" Grid.Column="0" Click="ViewModel.Increment_Output_Click">Increment Output</Button>
+        <Button Grid.Row="5" Grid.Column="0" Click="ViewModel.Increment_HighAddress_Click">Increment High Address</Button>
+        <Button Grid.Row="6" Grid.Column="0" Click="ViewModel.Increment_Flags_Click">Increment Flags</Button>
+        <Button Grid.Row="7" Grid.Column="0" Click="ViewModel.Increment_Data_Click">Increment Data</Button>
+        <Button Grid.Row="8" Grid.Column="0" Click="ViewModel.Decrement_LowAddress_Click">Decrement Low Address</Button>
+        <Button Grid.Row="9" Grid.Column="0" Click="ViewModel.FetchSwitches_Click">Get Switches</Button>
+        <TextBlock Grid.Row="9" Grid.Column="1" x:Name="txtSwitches" Foreground="White" Text = "{x:Bind ViewModel.SwitchString, Mode=TwoWay}" />
+    </Grid>
+</Page>

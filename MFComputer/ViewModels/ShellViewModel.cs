@@ -33,6 +33,11 @@ public class ShellViewModel : ObservableRecipient
         get;
     }
 
+    public ICommand MenuViewsFrontPanelCommand
+    {
+        get;
+    }
+
     public ICommand MenuViewsMainCommand
     {
         get;
@@ -56,6 +61,7 @@ public class ShellViewModel : ObservableRecipient
 
         MenuFileExitCommand = new RelayCommand(OnMenuFileExit);
         MenuViewsTestbedCommand = new RelayCommand(OnMenuViewsTestbed);
+        MenuViewsFrontPanelCommand = new RelayCommand(OnMenuViewsFrontPanel);
         MenuSettingsCommand = new RelayCommand(OnMenuSettings);
         MenuViewsStatusCommand = new RelayCommand(OnMenuViewsStatus);
         MenuViewsMainCommand = new RelayCommand(OnMenuViewsMain);
@@ -66,6 +72,7 @@ public class ShellViewModel : ObservableRecipient
     private void OnMenuFileExit() => Application.Current.Exit();
 
     private void OnMenuViewsTestbed() => NavigationService.NavigateTo(typeof(TestbedViewModel).FullName!);
+    private void OnMenuViewsFrontPanel() => NavigationService.NavigateTo(typeof(FrontPanelViewModel).FullName!);
 
     private void OnMenuSettings() => NavigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
 

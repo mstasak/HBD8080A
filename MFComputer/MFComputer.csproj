@@ -23,6 +23,7 @@
     <None Remove="Assets\pushbutton.png" />
     <None Remove="Assets\rockerswitchoff.png" />
     <None Remove="Assets\rockerswitchon.png" />
+    <None Remove="Views\FrontPanelPage.xaml" />
     <None Remove="Views\LEDRow.xaml" />
     <None Remove="Views\SwitchButtonRow.xaml" />
     <None Remove="Views\SwitchRow.xaml" />
@@ -47,6 +48,9 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Page Update="Views\FrontPanelPage.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\SwitchButtonRow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>

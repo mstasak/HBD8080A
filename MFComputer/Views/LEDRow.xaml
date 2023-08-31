@@ -27,14 +27,14 @@
             <!--<ColumnDefinition Width="3*"></ColumnDefinition>-->
         </Grid.ColumnDefinitions>
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="8" HorizontalAlignment="Center" Foreground="White" Text="{x:Bind TopTitle}">Data Bus</TextBlock>
-        <Ellipse Grid.Row="1" Grid.Column="0" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="1" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="2" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="3" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="4" Fill="Black" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="5" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="6" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
-        <Ellipse Grid.Row="1" Grid.Column="7" Fill="Red" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="0" Fill="{x:Bind LEDs.LedBrush7, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="1" Fill="{x:Bind LEDs.LedBrush6, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="2" Fill="{x:Bind LEDs.LedBrush5, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="3" Fill="{x:Bind LEDs.LedBrush4, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="4" Fill="{x:Bind LEDs.LedBrush3, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="5" Fill="{x:Bind LEDs.LedBrush2, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="6" Fill="{x:Bind LEDs.LedBrush1, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
+        <Ellipse Grid.Row="1" Grid.Column="7" Fill="{x:Bind LEDs.LedBrush0, Mode=OneWay}" Height="32" Width="32" StrokeThickness="4" Stroke="DarkRed"/>
         <TextBlock Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" Foreground="White">D7</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" Foreground="White">D6</TextBlock>
         <TextBlock Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" Foreground="White">D5</TextBlock>
