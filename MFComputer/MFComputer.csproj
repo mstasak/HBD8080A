@@ -21,8 +21,12 @@
   <ItemGroup>
     <None Remove="Assets\bidirocker.png" />
     <None Remove="Assets\pushbutton.png" />
+    <None Remove="Assets\rockerdownbright.png" />
+    <None Remove="Assets\rockerdowndim.png" />
     <None Remove="Assets\rockerswitchoff.png" />
     <None Remove="Assets\rockerswitchon.png" />
+    <None Remove="Assets\rockerupbright.png" />
+    <None Remove="Assets\rockerupdim.png" />
     <None Remove="Views\FrontPanelPage.xaml" />
     <None Remove="Views\LEDRow.xaml" />
     <None Remove="Views\SwitchButtonRow.xaml" />

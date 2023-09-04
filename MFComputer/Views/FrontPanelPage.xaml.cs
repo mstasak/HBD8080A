@@ -17,4 +17,18 @@ public sealed partial class FrontPanelPage : Page
         InitializeComponent();
     }
 
+    private void Control_BankChanged(object sender, FrontPanelInputRowEventArgs e) {
+        if (e.ButtonPresses.HasValue) { 
+            
+        }
+        if (e.ButtonUpPresses.HasValue) {
+            
+        }
+        if (e.ButtonDownPresses.HasValue) {
+            
+        }
+        if (e.SwitchStates.HasValue) {
+            
+        }
+    }
 }

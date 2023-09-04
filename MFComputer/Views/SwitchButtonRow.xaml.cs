@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using Newtonsoft.Json.Linq;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -23,22 +24,44 @@ using Windows.UI;
 
 namespace MFComputer.Views;
 public sealed partial class SwitchButtonRow : UserControl {
+    public delegate void PanelChangedHandler(object sender, FrontPanelInputRowEventArgs e);
+    public event PanelChangedHandler? OnPanelChanged;
     public static readonly DependencyProperty SwitchValuesProperty = DependencyProperty.Register(
     "SwitchValues", typeof(byte), typeof(SwitchButtonRow), new PropertyMetadata(null));
 
-    public int NumControls { get; set; } = 0;
+    public byte SwitchValues {
+        get {
+            //Debug.WriteLine($"In SwitchValues getter: DepProp value = 0x{(byte)GetValue(SwitchValuesProperty):2x}, SwitchBank value = 0x{SwitchBank0.SwitchValues:2x}");
+            var currentValue = (byte)GetValue(SwitchValuesProperty);
+            if (currentValue != SwitchBank0.SwitchRowValues) {
+                SwitchValues = SwitchBank0.SwitchRowValues;
+            }
+            return (byte)GetValue(SwitchValuesProperty);
+        }
+        set {
+            SwitchBank0.SwitchRowValues = value;
+            SetValue(SwitchValuesProperty, value);
+        }
+    }
+
     public string ControlTypes { get; set; } = "Button,ToggleButton,ToggleSwitch";
     public string TopTitle { get; set; } = "Title";
     public string ControlLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
-    public int SwitchValues { get; set; } = 0;
-
-    public SwitchBank SwitchBank0 { get; set; }
+    public int NumControls { get; set; } = 0;
+    
+    public FrontPanelInputRowHelper SwitchBank0 { get; set; }
 
     public SwitchButtonRow() {
         InitializeComponent();
-        SwitchBank0 = new SwitchBank();
+        SwitchBank0 = new FrontPanelInputRowHelper();
+        SwitchBank0.OnFrontPanelInputRowChanged += SwitchBank0_OnSwitchBankChanged;
     }
 
+    private void SwitchBank0_OnSwitchBankChanged(object sender, FrontPanelInputRowEventArgs e) {
+        if (e.SwitchStates.HasValue) {
+            SwitchValues = e.SwitchStates.Value;
+        }
+    }
     private void Grid_Loaded(object sender, RoutedEventArgs e) {
         //validate params and infer NumControls from # elements in ControlTypes if needed
         var labels = ControlLabels.Split(',');
@@ -71,10 +94,6 @@ public sealed partial class SwitchButtonRow : UserControl {
 
         BitmapImage bitmapImage;
         //buttons and switches
-        //Creating these on the fly did not work well - apparently XAML processing configures controls in ways not readily copied
-        //in property code.  So I will make a model control of each type, and clone it into place during construction.
-        //Grid.Children.Clear();
-        //var ButtonBackground = new SolidColorBrush(Colors.HotPink);
         var ButtonBackground = new SolidColorBrush(Color.FromArgb(0,40,40,40));
         for (i = 0; i < NumControls; i++) {
             UIElement ctl;
@@ -88,6 +107,7 @@ public sealed partial class SwitchButtonRow : UserControl {
                         Margin = new Thickness(0),
                         Tag = i
                     };
+                    btn.Click += Btn_Click;
                     var PushButtonImage = new Image();
                     bitmapImage = new BitmapImage {
                         UriSource = new Uri("ms-appx:///Assets//pushbutton.png", UriKind.RelativeOrAbsolute)
@@ -98,6 +118,9 @@ public sealed partial class SwitchButtonRow : UserControl {
                     //btn.Width = 53;
                     //btn.Height = 110;
                     ctl = btn;
+                    Grid.Children.Add(ctl);
+                    Grid.SetRow((FrameworkElement)ctl, 1);
+                    Grid.SetColumn((FrameworkElement)ctl, i);
                     break;
                 case "ToggleSwitch":
                     var rockerSwitch = new ToggleSwitch {
@@ -127,30 +150,108 @@ public sealed partial class SwitchButtonRow : UserControl {
                     //rockerSwitch.Width = 53;
                     //rockerSwitch.Height = 110;
                     //rockerSwitch.Background = ButtonBackground; //Had trouble with this button having a lighter background
+
+                    //bind switch[0-7].IsOn to switchbank0.Switch[7-0]On
+                    var b = new Binding();
+                    b.Source = SwitchBank0;
+                    b.Path = i switch {
+                        0 => new PropertyPath(nameof(SwitchBank0.Switch7On)),
+                        1 => new PropertyPath(nameof(SwitchBank0.Switch6On)),
+                        2 => new PropertyPath(nameof(SwitchBank0.Switch5On)),
+                        3 => new PropertyPath(nameof(SwitchBank0.Switch4On)),
+                        4 => new PropertyPath(nameof(SwitchBank0.Switch3On)),
+                        5 => new PropertyPath(nameof(SwitchBank0.Switch2On)),
+                        6 => new PropertyPath(nameof(SwitchBank0.Switch1On)),
+                        7 => new PropertyPath(nameof(SwitchBank0.Switch0On)),
+                        _ => null
+                    };
+                    b.Mode = BindingMode.TwoWay;
+                    b.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+                    rockerSwitch.SetBinding(ToggleSwitch.IsOnProperty, b);
+
                     ctl = rockerSwitch;
+                    Grid.Children.Add(ctl);
+                    Grid.SetRow((FrameworkElement)ctl, 1);
+                    Grid.SetColumn((FrameworkElement)ctl, i);
                     break;
                 case "ToggleButton":
                     //var bidiButton = new ToggleButton(); //NO!  ToggleButton is not a double throw momentary contact button!
                     //I want a button which can be tapped up or down, like a car window control or an Examine/Examine Next button on
                     //an IMSAI 8080 front panel or a non-rotary light dimmer "switch"!
-                    var bidiButton = new Button {
+                    //var bidiButton = new Button {
+                    //    Background = ButtonBackground,
+                    //    HorizontalAlignment = HorizontalAlignment.Center,
+                    //    BorderThickness = new Thickness(0),
+                    //    Padding = new Thickness(0),
+                    //    Margin = new Thickness(0),
+                    //    Tag = i
+                    //};
+                    //var BiDiRockerImage = new Image();
+                    //bitmapImage = new BitmapImage {
+                    //    UriSource = new Uri("ms-appx:///Assets//bidirocker.png", UriKind.RelativeOrAbsolute)
+                    //};
+                    //BiDiRockerImage.Width = bitmapImage.DecodePixelWidth = 53; //natural px width of image source
+                    //BiDiRockerImage.Source = bitmapImage;
+                    //bidiButton.Content = BiDiRockerImage;
+                    ////bidiButton.Width = 53;
+                    ////bidiButton.Height = 110;
+                    //ctl = bidiButton;
+                    //Grid.Children.Add(ctl);
+                    //Grid.SetRow((FrameworkElement)ctl, 1);
+                    //Grid.SetColumn((FrameworkElement)ctl, i);
+
+                    var upBitmapImage = new BitmapImage {
+                        UriSource = new Uri("ms-appx:///Assets//rockerupbright.png", UriKind.RelativeOrAbsolute),
+                        DecodePixelWidth = 53
+                    };
+                    var upRockerImage = new Image() {
+                        Width = 53, //natural px width of image source
+                        Source = upBitmapImage
+                    };
+                    var upButton = new Button {
                         Background = ButtonBackground,
                         HorizontalAlignment = HorizontalAlignment.Center,
                         BorderThickness = new Thickness(0),
                         Padding = new Thickness(0),
                         Margin = new Thickness(0),
-                        Tag = i
+                        Tag = i,
+                        Content = upRockerImage
                     };
-                    var BiDiRockerImage = new Image();
-                    bitmapImage = new BitmapImage {
-                        UriSource = new Uri("ms-appx:///Assets//bidirocker.png", UriKind.RelativeOrAbsolute)
+                    upButton.Click += UpButton_Click;
+
+                    var downBitmapImage = new BitmapImage {
+                        UriSource = new Uri("ms-appx:///Assets//rockerdownbright.png", UriKind.RelativeOrAbsolute),
+                        DecodePixelWidth = 53
                     };
-                    BiDiRockerImage.Width = bitmapImage.DecodePixelWidth = 53; //natural px width of image source
-                    BiDiRockerImage.Source = bitmapImage;
-                    bidiButton.Content = BiDiRockerImage;
-                    //bidiButton.Width = 53;
-                    //bidiButton.Height = 110;
-                    ctl = bidiButton;
+                    var downRockerImage = new Image() {
+                        Width = 53, //natural px width of image source
+                        Source = downBitmapImage
+                    };
+                    var downButton = new Button {
+                        Background = ButtonBackground,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        BorderThickness = new Thickness(0),
+                        Padding = new Thickness(0),
+                        Margin = new Thickness(0),
+                        Tag = i + 8,
+                        Content = downRockerImage
+                    };
+                    downButton.Click += DownButton_Click;
+                    var ButtonContainer = new StackPanel() {
+                        Orientation = Orientation.Vertical,
+                        Spacing = 0,
+                        Width = 53,
+                        Height = 110,
+                        Padding = new Thickness(0),
+                        Margin = new Thickness(0),
+                        BorderThickness = new Thickness(0),
+                    };
+                    ButtonContainer.Children.Add(upButton);
+                    ButtonContainer.Children.Add(downButton);
+                    ctl = ButtonContainer;
+                    Grid.Children.Add(ctl);
+                    Grid.SetRow((FrameworkElement)ctl, 1);
+                    Grid.SetColumn((FrameworkElement)ctl, i);
                     break;
                 default:
                     var btn2 = new Button {
@@ -163,11 +264,11 @@ public sealed partial class SwitchButtonRow : UserControl {
                         Tag = i
                     };
                     ctl = btn2;
+                    Grid.Children.Add(ctl);
+                    Grid.SetRow((FrameworkElement)ctl, 1);
+                    Grid.SetColumn((FrameworkElement)ctl, i);
                     break;
             }
-            Grid.Children.Add(ctl);
-            Grid.SetRow((FrameworkElement)ctl, 1);
-            Grid.SetColumn((FrameworkElement)ctl, i);
         }
 
         //bottom titles
@@ -182,5 +283,39 @@ public sealed partial class SwitchButtonRow : UserControl {
             Grid.SetRow(tBlk, 2);
             Grid.SetColumn(tBlk, i);
         }
+    }
+
+    private void DownButton_Click(object sender, RoutedEventArgs e) {
+        //Debug.WriteLine($"Down Button was clicked by button with tag {((FrameworkElement)sender).Tag}");
+        // Make sure someone is listening to event
+        var tag = (int)((FrameworkElement)sender).Tag; //8-15 from left
+        OnPanelChanged?.Invoke(
+            this, 
+            new FrontPanelInputRowEventArgs(Switches: SwitchValues, 
+                Presses: null, 
+                UpPresses: null, 
+                DownPresses: (byte)(0x80 >> (tag - 8))));
+    }
+
+    private void UpButton_Click(object sender, RoutedEventArgs e) {
+        //Debug.WriteLine($"Up Button was clicked by button with tag {((FrameworkElement)sender).Tag}");
+        var tag = (int)((FrameworkElement)sender).Tag; //0-7 from left
+        OnPanelChanged?.Invoke(
+            this, 
+            new FrontPanelInputRowEventArgs(Switches: SwitchValues, 
+                Presses: null, 
+                UpPresses: (byte)(0x80 >> (tag)), 
+                DownPresses: null));
+    }
+
+    private void Btn_Click(object sender, RoutedEventArgs e) {
+        //Debug.WriteLine($"Button was clicked by button with tag {((FrameworkElement)sender).Tag}");
+        var tag = (int)((FrameworkElement)sender).Tag; //0-7 from left
+        OnPanelChanged?.Invoke(
+            this, 
+            new FrontPanelInputRowEventArgs(Switches: SwitchValues, 
+                Presses: (byte)(0x80 >> (tag)),
+                UpPresses: null, 
+                DownPresses: null));
     }
 }

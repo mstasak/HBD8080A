@@ -60,6 +60,8 @@ public partial class App : Application
             services.AddSingleton<IActivationService, ActivationService>();
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton(ComputerSystemService.Instance);
+            services.AddSingleton(FrontPanelDataService.Instance);
 
             // Core Services
             services.AddSingleton<IFileService, FileService>();
@@ -68,18 +70,18 @@ public partial class App : Application
             services.AddSingleton<Hardware.Computer.Cpu8080A>();
 
             // Views and ViewModels
-            services.AddSingleton<TestbedViewModel>();
-            services.AddSingleton<TestbedPage>();
-            services.AddSingleton<FrontPanelViewModel>();
-            services.AddSingleton<FrontPanelPage>();
-            services.AddTransient<SettingsViewModel>();
-            services.AddTransient<SettingsPage>();
-            services.AddTransient<StatusViewModel>();
-            services.AddTransient<StatusPage>();
-            services.AddTransient<MainViewModel>();
-            services.AddTransient<MainPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
+            services.AddTransient<MainPage>();
+            services.AddTransient<MainViewModel>();
+            services.AddSingleton<FrontPanelPage>();
+            services.AddSingleton<FrontPanelViewModel>();
+            services.AddTransient<StatusPage>();
+            services.AddTransient<StatusViewModel>();
+            services.AddTransient<SettingsViewModel>();
+            services.AddTransient<SettingsPage>();
+            services.AddSingleton<TestbedPage>();
+            services.AddSingleton<TestbedViewModel>();
 
             // Configuration
             services.Configure<LocalSettingsOptions>(context.Configuration.GetSection(nameof(LocalSettingsOptions)));

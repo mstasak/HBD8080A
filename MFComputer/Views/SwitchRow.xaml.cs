@@ -25,15 +25,15 @@ public sealed partial class SwitchRow : UserControl {
     //private byte switchValues;
     public byte SwitchValues {
         get {
-            Debug.WriteLine($"In SwitchValues getter: DepProp value = 0x{(byte)GetValue(SwitchValuesProperty):2x}, SwitchBank value = 0x{SwitchBank0.SwitchValues:2x}");
+            //Debug.WriteLine($"In SwitchValues getter: DepProp value = 0x{(byte)GetValue(SwitchValuesProperty):2x}, SwitchBank value = 0x{SwitchBank0.SwitchValues:2x}");
             var currentValue = (byte)GetValue(SwitchValuesProperty);
-            if (currentValue != SwitchBank0.SwitchValues) {
-                SwitchValues = SwitchBank0.SwitchValues;
+            if (currentValue != SwitchBank0.SwitchRowValues) {
+                SwitchValues = SwitchBank0.SwitchRowValues;
             }
             return (byte)GetValue(SwitchValuesProperty);
         }
         set {
-            SwitchBank0.SwitchValues = value;
+            SwitchBank0.SwitchRowValues = value;
             SetValue(SwitchValuesProperty, value);
         }
     }
@@ -41,20 +41,18 @@ public sealed partial class SwitchRow : UserControl {
     public string ButtonLabels { get; set; } = "A7,A6,A5,A4,A3,A2,A1,A0"; //can be set from XAML, but no hot-reload available without observation?
     public int NumSwitches { get; set; } = 8;
 
-    private SwitchBank SwitchBank0 { get; set; }
-
-    /*
-        _testClass.OnUpdateStatus += new TestClass.StatusUpdateHandler(UpdateStatus);
-    */
+    private FrontPanelInputRowHelper SwitchBank0 { get; set; }
 
     public SwitchRow() {
         InitializeComponent();
-        SwitchBank0 = new SwitchBank();
-        SwitchBank0.OnSwitchBankChanged += SwitchBank0_OnSwitchBankChanged;
+        SwitchBank0 = new FrontPanelInputRowHelper();
+        SwitchBank0.OnFrontPanelInputRowChanged += SwitchBank0_OnSwitchBankChanged;
     }
 
-    private void SwitchBank0_OnSwitchBankChanged(object sender, SwitchBank.SwitchBankChangedEventArgs e) {
-        SwitchValues = e.SwitchStates;
+    private void SwitchBank0_OnSwitchBankChanged(object sender, FrontPanelInputRowEventArgs e) {
+        if (e.SwitchStates.HasValue) {
+            SwitchValues = e.SwitchStates.Value;
+        }
     }
 
     private void Grid_Loaded(object sender, RoutedEventArgs e) {
