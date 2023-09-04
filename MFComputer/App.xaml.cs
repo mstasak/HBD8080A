@@ -11,6 +11,7 @@ using MFComputer.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace MFComputer;
 
@@ -39,6 +40,9 @@ public partial class App : Application
     }
 
     public static WindowEx MainWindow { get; } = new MainWindow();
+    public static Dictionary<string, WindowEx> OtherWindows {
+        get;
+    } = new Dictionary<string, WindowEx>();
 
     public App()
     {
@@ -102,5 +106,13 @@ public partial class App : Application
         base.OnLaunched(args);
 
         await App.GetService<IActivationService>().ActivateAsync(args);
+
+        var fpWindow = new FrontPanelWindow();
+        OtherWindows.Add("Front Panel", fpWindow);
+        var fpFrame = new Frame();
+        fpWindow.Content = fpFrame;
+        var frontPanel = GetService<FrontPanelPage>();
+        fpFrame.Content = frontPanel;
+        fpWindow.Show();
     }
 }

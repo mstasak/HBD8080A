@@ -69,4 +69,9 @@ public class ActivationService : IActivationService
         await _themeSelectorService.SetRequestedThemeAsync();
         await Task.CompletedTask;
     }
+    public void CloseOtherWindows() {
+        foreach (var win in App.OtherWindows.Values) {
+            win.Close();
+        }
+    }
 }

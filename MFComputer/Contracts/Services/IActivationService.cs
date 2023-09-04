@@ -3,4 +3,5 @@
 public interface IActivationService
 {
     Task ActivateAsync(object activationArgs);
+    public void CloseOtherWindows();
 }

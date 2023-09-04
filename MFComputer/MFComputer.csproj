@@ -27,6 +27,7 @@
     <None Remove="Assets\rockerswitchon.png" />
     <None Remove="Assets\rockerupbright.png" />
     <None Remove="Assets\rockerupdim.png" />
+    <None Remove="FrontPanelWindow.xaml" />
     <None Remove="Views\FrontPanelPage.xaml" />
     <None Remove="Views\LEDRow.xaml" />
     <None Remove="Views\SwitchButtonRow.xaml" />
@@ -52,6 +53,9 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Page Update="FrontPanelWindow.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
     <Page Update="Views\FrontPanelPage.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
