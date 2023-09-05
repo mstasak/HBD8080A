@@ -22,16 +22,16 @@ public sealed class PeripheralsService {
      *   raw keyboard
      *   mouse
      *   pass-through joystick or game controller
-     *   teletype
+     *   teletype / video text display
      *   basic terminal (ADM-3A? VT-52? VT-100? TV-Typewriter?)
      *   line printer
      *   graphics printer
-     *   video text display
      *   video graphics display
      *   specific peripheral like Cromemco Dazzler
      *   sound output
      *   floppy and hard disks
      *   bank-switched RAM
      *   pretend math coprocessor
+     *   A CRT-like library of program functionality which would overwhelm a poor 64K RAM 8-bit CPU - served by host
      */
 }
