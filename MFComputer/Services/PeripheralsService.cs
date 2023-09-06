@@ -32,6 +32,7 @@ public sealed class PeripheralsService {
      *   floppy and hard disks
      *   bank-switched RAM
      *   pretend math coprocessor
-     *   A CRT-like library of program functionality which would overwhelm a poor 64K RAM 8-bit CPU - served by host
+     *   A CRT-like library of program functionality which would overwhelm a
+     *   poor little 64K RAM 8-bit CPU - served by host.
      */
 }

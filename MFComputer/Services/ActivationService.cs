@@ -69,6 +69,10 @@ public class ActivationService : IActivationService
         await _themeSelectorService.SetRequestedThemeAsync();
         await Task.CompletedTask;
     }
+    
+    /// <summary>
+    /// App shutdown helper.  Iterate the list of "App.OtherWindows" and close each one.
+    /// </summary>
     public void CloseOtherWindows() {
         foreach (var win in App.OtherWindows.Values) {
             win.Close();

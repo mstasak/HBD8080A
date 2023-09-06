@@ -101,6 +101,14 @@ public partial class App : Application
         // https://docs.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.application.unhandledexception.
     }
 
+    /// <summary>
+    /// App startup code.
+    /// Populate the main window shell with an instance of MainPage.
+    /// Also create a second window and populate it with the Front Panel page.
+    /// May enhance to remember window sizes and positions, and perhaps
+    /// restore state of other windows (cpu view, ram view, registers, etc)
+    /// </summary>
+    /// <param name="args"></param>
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
