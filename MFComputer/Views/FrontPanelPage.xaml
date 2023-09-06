@@ -63,11 +63,11 @@
                              HorizontalAlignment="Right" TopTitle="Control" Grid.Row="3" Grid.Column="2" NumControls="6"
                              ControlTypes="ToggleButton,ToggleButton,ToggleButton,Button,Button,ToggleSwitch" 
                              ControlLabels="Ex/ExNx,Dp/DpNxt,Run/Stop,SnglStp,Reset,Pwr On/Off"
-                             OnPanelChanged="Control_BankChanged"/>
+                             OnPanelChanged="ViewModel.ControlBank_Changed"/>
 
         <!-- temporary debug/demo stuff below -->
         <Button Grid.Row="4" Grid.Column="0" Click="ViewModel.Increment_Output_Click">Increment Output</Button>
-        <Button Grid.Row="5" Grid.Column="0" Click="ViewModel.Increment_HighAddress_Click">Increment High Address</Button>
+        <Button Grid.Row="5" Grid.Column="0" Click="ViewModel.LEDLoop_Click">Load and run I/O switch->LED copy loop</Button>
         <Button Grid.Row="6" Grid.Column="0" Click="ViewModel.Increment_Flags_Click">Increment Flags</Button>
         <Button Grid.Row="7" Grid.Column="0" Click="ViewModel.Increment_Data_Click">Increment Data</Button>
         <Button Grid.Row="8" Grid.Column="0" Click="ViewModel.Decrement_LowAddress_Click">Decrement Low Address</Button>

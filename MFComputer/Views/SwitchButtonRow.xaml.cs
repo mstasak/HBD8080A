@@ -59,7 +59,11 @@ public sealed partial class SwitchButtonRow : UserControl {
 
     private void SwitchBank0_OnSwitchBankChanged(object sender, FrontPanelInputRowEventArgs e) {
         if (e.SwitchStates.HasValue) {
-            SwitchValues = e.SwitchStates.Value;
+            if (SwitchValues != e.SwitchStates.Value) {
+                SwitchValues = e.SwitchStates.Value;
+                //raise an event for SwitchButtonRow's owner? Or just rely on property changed? Think I heard binding code can bypass accessors, so probably need event.
+                OnPanelChanged?.Invoke(this, e);
+            }
         }
     }
     private void Grid_Loaded(object sender, RoutedEventArgs e) {

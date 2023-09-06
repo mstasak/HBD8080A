@@ -1,4 +1,6 @@
-﻿namespace MFComputer.Hardware.Computer;
+﻿using System.Diagnostics;
+
+namespace MFComputer.Hardware.Computer;
 public class Cpu8080A {
 
     #region Flag Bits
@@ -49,6 +51,26 @@ public class Cpu8080A {
     /// Are interrupts enabled?  Don't know if we will even simulate this.
     /// </summary>
     public bool IsInterruptsEnabled;
+
+    public void Reset() {
+        var running = IsRunning;
+        Stop();
+        A = 0;
+        BC = 0;
+        DE = 0;
+        HL = 0;
+        PC = 0;
+        SP = 0;
+        Flags = 0;
+        IsInterruptsEnabled = false;
+        if (running) {
+            Run();
+        }
+    }
+
+    public void Stop() {
+        IsRunning = false;
+    }
     #endregion Machine State
 
     #region Registers
@@ -200,7 +222,7 @@ public class Cpu8080A {
     /// We will need some means for external start-stop-reset-poweroff type control inputs.
     /// </summary>
     /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
-    public void Run(ushort? address = 0x100) {
+    public void Run(ushort? address = 0x100) { //default address, past end of RST 0-7 zone.
         if (address.HasValue) {
             PC = address.Value;
         }
