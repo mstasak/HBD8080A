@@ -18,10 +18,8 @@ public class FrontPanelViewModel : ObservableRecipient
         Computer = App.GetService<ComputerSystemService>();
         Cpu = Computer.Cpu;
         Cpu.Outputter += PortOutput;
-        //Cpu.Inputter += PortInput;
-        Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
-
-
+        //Cpu.Inputter += PortInput; //instead we push switch input values into Cpu8080A.InPortFF field
+        //Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
     }
 
     //public DispatcherQueue FrontPanelDispatcherQueue { // used by CPU8080A and/or ComputerSystemService code to access FP port values on UI thread
@@ -39,10 +37,7 @@ public class FrontPanelViewModel : ObservableRecipient
 
     public byte OutputLEDs {
         get => outputLEDs;
-        set { 
-            SetProperty(ref outputLEDs, value, nameof(OutputLEDs));
-            //Cpu8080A.InPortFF = value;
-        }
+        set => SetProperty(ref outputLEDs, value, nameof(OutputLEDs));
     }
     public byte FlagLEDs {
         get => flagLEDs;
@@ -133,8 +128,6 @@ public class FrontPanelViewModel : ObservableRecipient
         ushort pc = 0;
         //Cpu.Memory[pc++] = 0xDB; // in 0FFH
         //Cpu.Memory[pc++] = 0xFF;
-        ////Cpu.Memory[pc++] = 0x3E; // MVI A, 055H
-        ////Cpu.Memory[pc++] = 0x55;
         //Cpu.Memory[pc++] = 0xD3; // out 0FFH
         //Cpu.Memory[pc++] = 0xFF;
         //Cpu.Memory[pc++] = 0xC3; // jmp 0

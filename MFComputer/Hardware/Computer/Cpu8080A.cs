@@ -11,7 +11,7 @@ public class Cpu8080A {
 
     public Cpu8080A(DispatcherQueue? AppUIDispatcherQueue) {
         this.AppUIDispatcherQueue = AppUIDispatcherQueue;
-        Debug.WriteLine($"CPU8080A:ctor on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+        //Debug.WriteLine($"CPU8080A:ctor on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
     }
 
     #region Flag Bits
@@ -235,7 +235,7 @@ public class Cpu8080A {
     /// </summary>
     /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
     public void Run() {
-        Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+        //Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
         IsRunning = true;
         while (IsRunning) {
             RunInstruction();
@@ -256,7 +256,7 @@ public class Cpu8080A {
         ushort wTmp;
         bool newCarry;
         bool newAuxCarry;
-        Debug.WriteLine($"Addr: {PC-1:X2}  Opcode: {Memory[PC-1]:X2} Operands?: {Memory[PC]:X2} {Memory[PC+1]:X2}");
+        //Debug.WriteLine($"Addr: {PC-1:X2}  Opcode: {Memory[PC-1]:X2} Operands?: {Memory[PC]:X2} {Memory[PC+1]:X2}");
         switch (opcode) {
             case 0x00:
                 break; //nop (4 cycles)
@@ -1970,3 +1970,4 @@ public class Cpu8080A {
 //TODO: fix input issue
 //TODO: run on background thread, with external control inputs to change machine state (run/stop/throttle/single step/startup/shutdown/reset)
 //TODO: (in XAML) set up a "front panel" to simulate input switches, output leds, PC and flag displays, and a small region of memory; include single step button
+//TODO: optimization - use 256-byte lookup table for Z,S,P flags for speed (parity addition is slow)
