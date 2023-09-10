@@ -15,6 +15,9 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Services\FrontPanelDataService.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Remove="Assets\ImsaiFP.png" />
     <Content Remove="Assets\rockerswitches.pdn" />
   </ItemGroup>

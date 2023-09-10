@@ -1,13 +1,32 @@
 ﻿using System.Diagnostics;
+using System.Reflection.Metadata;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MFComputer.Hardware.Computer;
 using MFComputer.Services;
 using MFComputer.Views;
+using Microsoft.UI.Dispatching;
 
 namespace MFComputer.ViewModels;
 
 public class FrontPanelViewModel : ObservableRecipient
 {
+    public FrontPanelViewModel()
+    {
+        OutputLEDs = 0; // 0x38;
+        AddressHighLEDs = 0; // 0xF0;
+        AddressLowLEDs = 0; // 0x03;
+        Computer = App.GetService<ComputerSystemService>();
+        Cpu = Computer.Cpu;
+        Cpu.Outputter += PortOutput;
+        //Cpu.Inputter += PortInput;
+        Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+
+
+    }
+
+    //public DispatcherQueue FrontPanelDispatcherQueue { // used by CPU8080A and/or ComputerSystemService code to access FP port values on UI thread
+    //    get; private set; } = DispatcherQueue.GetForCurrentThread(); //(ViewModel is construct in call from UI thread)
+
     private byte outputLEDs;
     private byte flagLEDs;
     private byte addressHighLEDs;
@@ -20,7 +39,10 @@ public class FrontPanelViewModel : ObservableRecipient
 
     public byte OutputLEDs {
         get => outputLEDs;
-        set => SetProperty(ref outputLEDs, value, nameof(OutputLEDs));
+        set { 
+            SetProperty(ref outputLEDs, value, nameof(OutputLEDs));
+            //Cpu8080A.InPortFF = value;
+        }
     }
     public byte FlagLEDs {
         get => flagLEDs;
@@ -50,7 +72,10 @@ public class FrontPanelViewModel : ObservableRecipient
     }
     public byte AddressHighInputSwitches {
         get => addressHighInputSwitches;
-        set => SetProperty(ref addressHighInputSwitches, value);
+        set {
+            SetProperty(ref addressHighInputSwitches, value);
+            Cpu8080A.InPortFF = value;
+        }
     }
     public byte AddressLowDataSwitches {
         get => addressLowDataSwitches;
@@ -61,13 +86,40 @@ public class FrontPanelViewModel : ObservableRecipient
         set => SetProperty(ref controlSwitches, value);
     }
 
-    public FrontPanelViewModel()
-    {
-        OutputLEDs = 0; // 0x38;
-        AddressHighLEDs = 0; // 0xF0;
-        AddressLowLEDs = 0; // 0x03;
-        Computer = App.GetService<ComputerSystemService>();
-        Cpu = Computer.Cpu;
+    //private void PortInput(byte port, Cpu8080A.InputReceiver handler) {
+        
+    //    var dq = App.MainWindow.DispatcherQueue;
+    //    if (dq.HasThreadAccess) {
+    //        if (port == 0xff) {
+    //            handler(port: 0xff, handled: true, value: AddressHighInputSwitches);
+    //            //return AddressHighInputSwitches;
+    //        }
+    //        else {
+    //            handler(port: 0xff, handled: false, value: 0xff);
+    //            //return 0xff;
+    //        }
+    //    } else {
+    //        if (port == 0xff) {
+    //            dq.TryEnqueue(
+    //                Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+    //                () => handler(port: 0xff, handled: true, value: AddressHighInputSwitches)
+    //            );
+    //            //return AddressHighInputSwitches;
+    //        }
+    //        else {
+    //            dq.TryEnqueue(
+    //                Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+    //                () => handler(port: 0xff, handled: false, value: 0xff)
+    //            );
+    //            //return 0xff;
+    //        }
+    //    }
+    //}
+
+    private void PortOutput(byte port, byte value) {
+        if (port == 0xff) {
+            OutputLEDs = value;
+        }
     }
 
     public void Increment_Output_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
@@ -75,17 +127,39 @@ public class FrontPanelViewModel : ObservableRecipient
     }
 
     public void LEDLoop_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        OutputLEDs = (byte)(OutputLEDs + 1);
+        //OutputLEDs = (byte)(OutputLEDs + 1);
         Computer.Stop();
         Computer.Reset();
         ushort pc = 0;
-        Cpu.Memory[pc++] = 0xDB; // in $ff
-        Cpu.Memory[pc++] = 0xFF;
-        Cpu.Memory[pc++] = 0xD3; // out $ff
-        Cpu.Memory[pc++] = 0xFF;
-        Cpu.Memory[pc++] = 0xC3; // jmp 0
-        Cpu.Memory[pc++] = 0x00;
-        Cpu.Memory[pc++] = 0x00;
+        //Cpu.Memory[pc++] = 0xDB; // in 0FFH
+        //Cpu.Memory[pc++] = 0xFF;
+        ////Cpu.Memory[pc++] = 0x3E; // MVI A, 055H
+        ////Cpu.Memory[pc++] = 0x55;
+        //Cpu.Memory[pc++] = 0xD3; // out 0FFH
+        //Cpu.Memory[pc++] = 0xFF;
+        //Cpu.Memory[pc++] = 0xC3; // jmp 0
+        //Cpu.Memory[pc++] = 0x00;
+        //Cpu.Memory[pc++] = 0x00;
+
+        Cpu.Memory[pc++] = 0x16; // 0000:   mvi d,01H
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xDB; // 0002:   in 0FFH
+        Cpu.Memory[pc++] = 0xFF; //
+        Cpu.Memory[pc++] = 0x47; // 0004:   mov b,a
+        Cpu.Memory[pc++] = 0x7A; // 0005:   mov a,d
+        Cpu.Memory[pc++] = 0x07; // 0006:   rlc
+        Cpu.Memory[pc++] = 0xD3; // 0007:   out 0FFH
+        Cpu.Memory[pc++] = 0xFF; //
+        Cpu.Memory[pc++] = 0x57; // 0009:   mov d,a
+        Cpu.Memory[pc++] = 0x48; // 000A:   mov c,b
+        Cpu.Memory[pc++] = 0x0D; // 000B:   dcr c
+        Cpu.Memory[pc++] = 0xC2; // 000C:   jnz 000BH
+        Cpu.Memory[pc++] = 0x0B; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xC3; // 000F:   jmp 0002H
+        Cpu.Memory[pc++] = 0x02; //
+        Cpu.Memory[pc++] = 0x00; //
+        
         Computer.Run();
     }
 

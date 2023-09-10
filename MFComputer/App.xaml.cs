@@ -65,7 +65,7 @@ public partial class App : Application
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton(ComputerSystemService.Instance);
-            services.AddSingleton(FrontPanelDataService.Instance);
+            //services.AddSingleton(FrontPanelDataService.Instance);
 
             // Core Services
             services.AddSingleton<IFileService, FileService>();

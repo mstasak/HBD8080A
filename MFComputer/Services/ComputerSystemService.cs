@@ -1,16 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MFComputer.Hardware.Computer;
+using Microsoft.UI.Dispatching;
+//using Windows.System;
 
 namespace MFComputer.Services;
 
 
 public sealed class ComputerSystemService {
 
-    public Thread? CpuThread {
+    DispatcherQueueController? runDispatcherQueueController {
+        get; set;
+    }
+    DispatcherQueue? runDispatcherQueue {
+        get; set;
+    }
+    public DispatcherQueue? AppUIDispatcherQueue {
+        get; private set;
+    } = DispatcherQueue.GetForCurrentThread();
+
+    public Thread? RunThread {
         get; set; 
     }
 
@@ -20,7 +33,10 @@ public sealed class ComputerSystemService {
     public static ComputerSystemService Instance => lazy.Value;
 
     private ComputerSystemService() {
-        Cpu = new();
+        Debug.Assert(AppUIDispatcherQueue != null);
+        Cpu = new(AppUIDispatcherQueue: AppUIDispatcherQueue);
+        Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+
     }
 
     public Cpu8080A Cpu {
@@ -28,26 +44,43 @@ public sealed class ComputerSystemService {
     }
 
     public void RunStart() {
+        Cpu.Run();
     }
 
     public void Run() {
-        if (CpuThread != null) {
-            CpuThread.Resume();
-        } else {
-            CpuThread = new Thread(new ThreadStart(RunStart));
-            CpuThread.Start();
+        if (runDispatcherQueueController == null) { 
+            runDispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
+            runDispatcherQueue = runDispatcherQueueController.DispatcherQueue;
         }
+        runDispatcherQueue?.TryEnqueue(
+            DispatcherQueuePriority.High,
+            () => {
+                Cpu.Run();
+                //RunStart();    
+            }
+        );
+
+        //if (CpuThread != null) {
+        //    CpuThread.Resume();
+        //} else {
+        //    CpuThread = new Thread(new ThreadStart(RunStart));
+        //    //var CpuDispatcherQueue = DispatcherQueueController.CreateOnDedicatedThread();
+        //    CpuThread.Start();
+        //}
     }
 
-    public void Stop() {
-        if (CpuThread != null) {
-            CpuThread.Suspend();
+    public async void Stop() {
+        //if (CpuThread != null) {
+        //    CpuThread.Suspend();
+        //}
+        if (runDispatcherQueueController != null) {
+            await runDispatcherQueueController.ShutdownQueueAsync();
         }
     }
 
     public void Reset() {
         Cpu.Reset();
-        CpuThread = null;
+        //CpuThread = null;
     }
 
     public void SingleStep() {

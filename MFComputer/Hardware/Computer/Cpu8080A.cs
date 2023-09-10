@@ -1,7 +1,18 @@
 ﻿using System.Diagnostics;
+using Microsoft.UI.Dispatching;
+using Newtonsoft.Json.Linq;
 
 namespace MFComputer.Hardware.Computer;
 public class Cpu8080A {
+
+    public DispatcherQueue? AppUIDispatcherQueue {
+        get;
+    }
+
+    public Cpu8080A(DispatcherQueue? AppUIDispatcherQueue) {
+        this.AppUIDispatcherQueue = AppUIDispatcherQueue;
+        Debug.WriteLine($"CPU8080A:ctor on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+    }
 
     #region Flag Bits
     /// <summary>
@@ -46,6 +57,7 @@ public class Cpu8080A {
     /// Is the PC running?  Usually false unless .Run() method is executing.
     /// </summary>
     public bool IsRunning;
+    
 
     /// <summary>
     /// Are interrupts enabled?  Don't know if we will even simulate this.
@@ -222,18 +234,17 @@ public class Cpu8080A {
     /// We will need some means for external start-stop-reset-poweroff type control inputs.
     /// </summary>
     /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
-    public void Run(ushort? address = 0x100) { //default address, past end of RST 0-7 zone.
-        if (address.HasValue) {
-            PC = address.Value;
-        }
+    public void Run() {
+        Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
         IsRunning = true;
         while (IsRunning) {
             RunInstruction();
+            Thread.Sleep(1);
         }
     }
 
     /// <summary>
-    /// Run one instruction.  PC is advanced past instruction and any operands.
+    /// Run one instruction.  PC is advanced past instruction and any operand bytes.
     /// </summary>
     /// <returns>Number of cycles instruction would use on actual 8080A hardware.</returns>
     public int RunInstruction() {
@@ -245,6 +256,7 @@ public class Cpu8080A {
         ushort wTmp;
         bool newCarry;
         bool newAuxCarry;
+        Debug.WriteLine($"Addr: {PC-1:X2}  Opcode: {Memory[PC-1]:X2} Operands?: {Memory[PC]:X2} {Memory[PC+1]:X2}");
         switch (opcode) {
             case 0x00:
                 break; //nop (4 cycles)
@@ -272,7 +284,7 @@ public class Cpu8080A {
                 unchecked { B--; }
                 //standard zero, sign, parity handling
                 SetFlagsZPS(B);
-                //also set ac on right nibl underflow CONCERN: borrows may not set ac as expected - maybe set to 1 then blear when borrow occurs? find a test suite!
+                //also set ac on right nibl underflow CONCERN: borrows may not set ac as expected - maybe set to 1 then clear when borrow occurs? find a test suite!
                 Flags = (byte)((Flags & ~auxcarryflag) | (((B & 0x0f) == 0x0f) ? auxcarryflag : 0));
                 cycles = 5;
                 break; //dcr b
@@ -1596,6 +1608,8 @@ public class Cpu8080A {
                 cycles = 10;
                 break; //jc a16
             case 0xdb:
+                //RequestPortInput(port: FetchByte(), handler: genericInputHandler);
+                //A = inputValue;
                 A = PortInput(port: FetchByte());
                 cycles = 10;
                 break; //in port8
@@ -1830,6 +1844,7 @@ public class Cpu8080A {
                 break; //rst 7
                        //default: break;
         }
+        //Thread.Sleep(1);
         return cycles;
     }
 
@@ -1855,6 +1870,32 @@ public class Cpu8080A {
     #endregion Execution
 
     #region Input/Output
+
+    // ref https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/microsoft.ui.dispatching.dispatcherqueue?view=windows-app-sdk-1.4
+    // ref https://learn.microsoft.com/en-us/windows/communitytoolkit/extensions/dispatcherqueueextensions
+
+    public delegate void OutputAction(byte port, byte value);
+    public OutputAction? Outputter;
+
+    public delegate byte InputAction(byte port);
+    public InputAction? Inputter;
+    public static byte InPortFF;
+
+    //public delegate void InputReceiver(byte port, bool handled, byte value);
+    //private bool inputHandled;
+    //private byte inputPort;
+    //private byte inputValue;
+    //private void genericInputHandler(byte port, bool handled, byte value) {
+    //    if (handled) {
+    //        inputPort = port;
+    //        inputValue = value;
+    //        inputHandled = true;
+    //    }
+    //}
+
+
+
+
     /// <summary>
     /// Send port output data to any enrolled delegates.
     /// </summary>
@@ -1863,8 +1904,28 @@ public class Cpu8080A {
     private void PortOutput(byte port, byte value) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize output on a system with numerous ports used.
-        if (outputter is not null) {
-            outputter(port, value);
+        if (Outputter is not null) {
+            //Outputter(port, value);
+            //Outputter.Invoke(port, value);
+            //var dq = App.MainWindow.DispatcherQueue;
+            //var dp = App.MainWindow.Dispatcher;
+            //if (dq.HasThreadAccess) {
+            //    Outputter(port, value);
+            //}
+            //else {
+            //    bool isQueued = dq.TryEnqueue(
+            //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+            //    () => Outputter(port, value));
+            //}
+            
+            foreach (var Delegate in Outputter.GetInvocationList()) {
+                var outAction = Delegate as OutputAction;
+                _ = AppUIDispatcherQueue?.TryEnqueue(
+                    DispatcherQueuePriority.Normal,
+                    () => (outAction)?.Invoke(port, value)
+                );
+            }
+
         }
     }
 
@@ -1879,18 +1940,26 @@ public class Cpu8080A {
     /// <returns>Data from input source, to be stored into accumulator.</returns>
     private byte PortInput(byte port) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
-        //This would optimize input on a system with numerous ports used.
-        if (inputter is not null) {
-            return inputter(port);
-        } else {
-            return 0xff;
+        //This would optimize input on a system with numerous ports used (may be unlikely).
+        if (port == 0xff) {
+            return Cpu8080A.InPortFF;    
         }
+        byte inputValue = 0xff;
+        if (Inputter is not null) {
+            if (AppUIDispatcherQueue is not null) {
+                foreach (var Delegate in Inputter.GetInvocationList()) {
+                    //inputValue = await AppUIDispatcherQueue.EnqueueAsync(
+                    //    (Delegate as InputAction),
+                    //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal
+                    //);
+                }
+            }
+        }
+        return inputValue;
     }
 
-    public delegate void OutputAction(byte port, byte value);
-    public OutputAction? outputter;
-    public delegate byte InputAction(byte port);
-    public InputAction? inputter;
+
+
     #endregion Input/Output
 
 }
