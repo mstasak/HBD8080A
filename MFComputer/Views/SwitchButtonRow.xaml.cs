@@ -172,6 +172,7 @@ public sealed partial class SwitchButtonRow : UserControl {
                     b.Mode = BindingMode.TwoWay;
                     b.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                     rockerSwitch.SetBinding(ToggleSwitch.IsOnProperty, b);
+                    rockerSwitch.Toggled += RockerSwitch_Toggled;
 
                     ctl = rockerSwitch;
                     Grid.Children.Add(ctl);
@@ -287,6 +288,16 @@ public sealed partial class SwitchButtonRow : UserControl {
             Grid.SetRow(tBlk, 2);
             Grid.SetColumn(tBlk, i);
         }
+    }
+
+    private void RockerSwitch_Toggled(object sender, RoutedEventArgs e) {
+        var tag = (int)((FrameworkElement)sender).Tag; //8-15 from left
+        OnPanelChanged?.Invoke(
+            this, 
+            new FrontPanelInputRowEventArgs(Switches: SwitchValues, 
+                Presses: null, 
+                UpPresses: null, 
+                DownPresses: null));
     }
 
     private void DownButton_Click(object sender, RoutedEventArgs e) {

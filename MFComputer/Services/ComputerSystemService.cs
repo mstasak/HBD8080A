@@ -23,9 +23,9 @@ public sealed class ComputerSystemService {
         get; private set;
     } = DispatcherQueue.GetForCurrentThread();
 
-    public Thread? RunThread {
-        get; set;
-    }
+    //public Thread? RunThread {
+    //    get; set;
+    //}
 
     private static readonly Lazy<ComputerSystemService> lazy =
         new(() => new ComputerSystemService());
@@ -33,35 +33,35 @@ public sealed class ComputerSystemService {
     public static ComputerSystemService Instance => lazy.Value;
 
     private ComputerSystemService() {
-        Debug.Assert(AppUIDispatcherQueue != null);
+    //    Debug.Assert(AppUIDispatcherQueue != null);
         Cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
-        //Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
-        IsOn = false;
-        IsTurbo = false;
-        IsRunning = false;
+        DoRunRun();
+    //    //Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+    //    IsOn = false;
+    //    IsTurbo 
     }
 
-    public bool IsOn {
-        get; set;
-    }
+    //public bool IsOn {
+    //    get; set;
+    //}
 
-    public bool IsRunning {
-        get; set;
-    }
+    //public bool IsRunning {
+    //    get; set;
+    //}
 
-    public bool IsTurbo {
-        get; set;
-    }
+    //public bool IsTurbo {
+    //    get; set;
+    //}
 
     public Cpu8080A Cpu {
         get; set;
     }
 
-    public void RunStart() {
-        Cpu.Run();
-    }
+    //public void RunStart() {
+    //    Cpu.Run();
+    //}
 
-    public void Run() {
+    public void DoRunRun() {
         if (runDispatcherQueueController == null) {
             runDispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
             runDispatcherQueue = runDispatcherQueueController.DispatcherQueue;
@@ -69,7 +69,7 @@ public sealed class ComputerSystemService {
         runDispatcherQueue?.TryEnqueue(
             DispatcherQueuePriority.High,
             () => {
-                Cpu.Run();
+                Cpu.RunLoop();
                 //RunStart();    
             }
         );
@@ -83,28 +83,28 @@ public sealed class ComputerSystemService {
         //}
     }
 
-    public async void Stop() {
-        //if (CpuThread != null) {
-        //    CpuThread.Suspend();
-        //}
-        if (runDispatcherQueueController != null) {
-            await runDispatcherQueueController.ShutdownQueueAsync();
-        }
-    }
+    //public async void Stop() {
+    //    //if (CpuThread != null) {
+    //    //    CpuThread.Suspend();
+    //    //}
+    //    if (runDispatcherQueueController != null) {
+    //        await runDispatcherQueueController.ShutdownQueueAsync();
+    //    }
+    //}
 
-    public void Reset() {
-        Cpu.Reset();
-        //CpuThread = null;
-    }
+    //public void Reset() {
+    //    Cpu.Reset();
+    //    //CpuThread = null;
+    //}
 
-    public void SingleStep() {
-    }
+    //public void SingleStep() {
+    //}
 
-    public void ShutDown() {
-    }
+    //public void ShutDown() {
+    //}
 
-    public void StartUp() {
-    }
+    //public void StartUp() {
+    //}
 
     //TO DO: implement state management
     //TO DO: implement threaded run operation

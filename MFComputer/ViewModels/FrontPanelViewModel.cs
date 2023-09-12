@@ -25,6 +25,7 @@ public class FrontPanelViewModel : ObservableRecipient {
     private DispatcherQueueTimer RepeatingTimer {
         get; set;
     }
+    private bool isFast = false;
 
     private enum PanelState {
         Off,
@@ -92,7 +93,7 @@ public class FrontPanelViewModel : ObservableRecipient {
 
         Computer = App.GetService<ComputerSystemService>();
         Cpu = Computer.Cpu;
-        ConfigureRefresh();
+        ConfigureRefresh(false);
         //Cpu.Outputter += PortOutput;
         //Cpu.Inputter += PortInput; //instead we push switch input values into Cpu8080A.InPortFF field
         //Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
@@ -137,8 +138,10 @@ public class FrontPanelViewModel : ObservableRecipient {
 
     public void LEDLoop_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
         //OutputLEDs = (byte)(OutputLEDs + 1);
-        Computer.Stop();
-        Computer.Reset();
+        if (Cpu.CurrentState != Cpu8080A.CpuState.Stopped) {
+            return;
+        }
+        Cpu.Reset();
         ushort pc = 0;
 
         //dumb loop - in switches, out leds, repeat
@@ -169,8 +172,6 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xC3; // 000F:   jmp 0002H ; refresh delay count and repeat rotate
         Cpu.Memory[pc++] = 0x02; //
         Cpu.Memory[pc++] = 0x00; //
-
-        Computer.Run();
     }
 
     public void ControlBank_Changed(object sender, FrontPanelInputRowEventArgs e) {
@@ -178,63 +179,64 @@ public class FrontPanelViewModel : ObservableRecipient {
             //Debug.WriteLine($"simple button press: {e.ButtonPresses.Value}");
             var buttons = e.ButtonPresses.Value;
             if ((buttons & 0x10) != 0) { // single step
-                if (Computer.IsRunning) return;
-                Cpu.RunInstruction();
+                Cpu.SingleStep();
             }
             if ((buttons & 0x08) != 0) { // reset
-                if (Computer.IsRunning ) return;
-                Cpu.Reset();
+                Cpu.RequestedState = Cpu8080A.CpuState.Reset;
             }
         }
         if (e.ButtonUpPresses.HasValue) {
             //Debug.WriteLine($"toggle button up press: {e.ButtonUpPresses.Value}");
             var buttons = e.ButtonUpPresses.Value;
-            if (((buttons & 0x80) != 0) && (!Cpu.IsRunning)) { // examine toggle up
+            if (((buttons & 0x80) != 0) && (Cpu.CurrentState == Cpu8080A.CpuState.Stopped)) { // examine toggle up
                 Cpu.PC = (ushort)((AddressHighInputSwitches << 8) | AddressLowDataSwitches);
             }
-            if (((buttons & 0x40) != 0) && (!Cpu.IsRunning)) { // deposit toggle up
+            if (((buttons & 0x40) != 0) && (Cpu.CurrentState == Cpu8080A.CpuState.Stopped)) { // deposit toggle up
                 Cpu.Memory[Cpu.PC] = AddressLowDataSwitches;
                 //RefreshMemoryDataDisplay();
             }
             if ((buttons & 0x20) != 0) { // run toggle up
-                if (! Computer.IsRunning) {
-                    Computer.Run();
-                }
+                Cpu.RequestedState = Cpu8080A.CpuState.Running;
+                ConfigureRefresh(true);
             }
         }
         if (e.ButtonDownPresses.HasValue) {
             Debug.WriteLine($"toggle button down press: {e.ButtonDownPresses.Value}");
             var buttons = e.ButtonDownPresses.Value;
-            if (((buttons & 0x80) != 0) && (!Cpu.IsRunning)) { // examine next toggle down
+            if (((buttons & 0x80) != 0) && (Cpu.CurrentState == Cpu8080A.CpuState.Stopped)) { // examine next toggle down
                 unchecked {
                     Cpu.PC++;
                 }
             }
-            if (((buttons & 0x40) != 0) && (!Cpu.IsRunning)) { // deposit next toggle down
+            if (((buttons & 0x40) != 0) && (Cpu.CurrentState == Cpu8080A.CpuState.Stopped)) { // deposit next toggle down
                 unchecked {
                     Cpu.PC++;
                 }
                 Cpu.Memory[Cpu.PC] = AddressLowDataSwitches;
             }
             if ((buttons & 0x20) != 0) { // stop toggle down
-                if (Computer.IsRunning) {
-                    Computer.Stop();
-                }
+                Cpu.RequestedState = Cpu8080A.CpuState.Stopped;
             }
         }
 
         // persistent switch states are not useful without prior value to compare to;
         // bindings already keep the property value updated.
-        //if (e.SwitchStates.HasValue) {
-        //    if ((e.SwitchStates.Value & 0x01) != (ControlSwitches & 0x01)) {
-        //        Debug.WriteLine($"switch value changed: {e.SwitchStates.Value}");
-        //    //if ((buttons & 0x04) != 0) { // On/Off toggle
-        //    //}
-        //    }
-        //}
+        if (e.SwitchStates.HasValue) {
+            //if ((e.SwitchStates.Value & 0x04) != (ControlSwitches & 0x04)) {
+            //        Debug.WriteLine($"switch value changed: {e.SwitchStates.Value}");
+            if ((e.SwitchStates & 0x04) != 0) { // On/Off toggle
+                if (Cpu.CurrentState == Cpu8080A.CpuState.Off) {
+                    Cpu.RequestedState = Cpu8080A.CpuState.On;
+                }
+            } else if ((e.SwitchStates & 0x04) == 0) {
+                    Cpu.RequestedState = Cpu8080A.CpuState.Off;
+            }
+
+            //}
+        }
     }
 
-    private void ConfigureRefresh() {
+    private void ConfigureRefresh(bool fast) {
         //set to fast pace when running, slow when stopped or off
         if (RepeatingTimer is null) {
             RepeatingTimer = FrontPanelDispatcherQueue.CreateTimer();
@@ -244,23 +246,22 @@ public class FrontPanelViewModel : ObservableRecipient {
                 RefreshFrontPanel();
             };
         }
-        if (Computer.IsRunning) {
-            RepeatingTimer.Interval = TimeSpan.FromMicroseconds(1000 * 100);
-        }
-        else {
+        if (fast) {
             RepeatingTimer.Interval = TimeSpan.FromMicroseconds(1000 * 16);
+        } else {
+            RepeatingTimer.Interval = TimeSpan.FromMicroseconds(1000 * 100);
         }
         if (!RepeatingTimer.IsRunning) {
             // Start the Timer
             RepeatingTimer.Start();
         }
-
     }
 
     private void RefreshFrontPanel() {
         var pc = Cpu.PC;
         var flags = Cpu.Flags;
         var intEnb = Cpu.IsInterruptsEnabled;
+        //var isFast = RepeatingTimer.Interval < TimeSpan.FromMicroseconds(1000 * 100);
         MemoryDataLEDs = Cpu.Memory[pc];
         AddressHighLEDs = (byte)(pc >> 8);
         AddressLowLEDs = (byte)(pc & 0xff);
@@ -278,9 +279,13 @@ public class FrontPanelViewModel : ObservableRecipient {
 
         //Turbo,Halt,Power
         StatusLEDs = (byte)(
-            (Computer.IsTurbo ? 0x80 : 0x00) |
-            (Computer.IsRunning ? 0x40 : 0x00) |
-            (Computer.IsOn ? 0x20 : 0x00)
+            (Cpu.IsTurbo ? 0x80 : 0x00) |
+            (((Cpu.CurrentState == Cpu8080A.CpuState.Running ) || (Cpu.CurrentState == Cpu8080A.CpuState.Halt)) ? 0x40 : 0x00) |
+            ((Cpu.CurrentState != Cpu8080A.CpuState.Off) ? 0x20 : 0x00)
         );
+        if ((Cpu.CurrentState == Cpu8080A.CpuState.Running ) != isFast) {
+            isFast = !isFast;
+            ConfigureRefresh(isFast);
+        }
     }
 }

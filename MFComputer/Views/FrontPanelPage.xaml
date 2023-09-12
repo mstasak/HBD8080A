@@ -52,7 +52,7 @@
         </Grid>
         
         <src:LEDRow HorizontalAlignment="Right" TopTitle="Status" Grid.Row="2" Grid.Column="2" LedCount="3"
-                    ButtonLabels="Turbo,Halt,Power,x,x,x,x,x" LedValues="{x:Bind ViewModel.StatusLEDs, Mode=OneWay}" />
+                    ButtonLabels="Turbo(?),Run,Power,x,x,x,x,x" LedValues="{x:Bind ViewModel.StatusLEDs, Mode=OneWay}" />
 
         <src:SwitchButtonRow SwitchValues="{x:Bind Path=ViewModel.ControlSwitches,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"
                              HorizontalAlignment="Right" TopTitle="Control" Grid.Row="3" Grid.Column="2" NumControls="6"

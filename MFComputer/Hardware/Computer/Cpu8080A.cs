@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Newtonsoft.Json.Linq;
 
 namespace MFComputer.Hardware.Computer;
@@ -20,7 +21,7 @@ public class Cpu8080A {
     /// Sign flag constant.  This bit set indicates a negative value result from some instructions (MSB set).
     /// </summary>
     public const byte signflag = 0x80;
-    
+
     /// <summary>
     /// Zero flag constant.  This bit set indicates a zero value result from some instructions.
     /// </summary>
@@ -54,36 +55,128 @@ public class Cpu8080A {
     #endregion Flag Bits
 
     #region Machine State
-    /// <summary>
-    /// Is the PC running?  Usually false unless .Run() method is executing.
-    /// </summary>
-    public bool IsRunning;
-    
+    public enum CpuState {
+        Off,
+        On, //only applies when currently Off
+        Reset,
+        Stopped,
+        Running,
+        Halt, //running but doing nothing but wait for an interrupt
+        Unchanged
+    }
+
+
+    private CpuState currentState = CpuState.Off;
+    public CpuState CurrentState => currentState;
+    public CpuState RequestedState = CpuState.Unchanged;
+    //private bool stateChangeRequested = false;
+
+    ///// <summary>
+    ///// Is the PC running?  Usually false unless .Run() method is executing.
+    ///// </summary>
+    //public readonly bool IsRunning;
 
     /// <summary>
     /// Are interrupts enabled?  Don't know if we will even simulate this.
     /// </summary>
     public bool IsInterruptsEnabled;
+    public bool IsTurbo => false;
 
     public void Reset() {
-        var running = IsRunning;
-        Stop();
         A = 0;
         BC = 0;
         DE = 0;
         HL = 0;
         PC = 0;
         SP = 0;
-        Flags = 0;
+        Flags = alwaysoneflags;
         IsInterruptsEnabled = false;
-        if (running) {
-            Run();
+    }
+
+    /// <summary>
+    /// Enter run mode, until a halt instruction is encountered.
+    /// We will need some means for external start-stop-reset-poweroff type control inputs.
+    /// </summary>
+    /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
+    public void RunLoop() {
+        //while (currentState != CpuState.Off) {
+        while (true) {
+            if (currentState == CpuState.Running && RequestedState == CpuState.Unchanged) {
+                RunInstruction();
+                // TODO: maintain cycles and elapsed time total, and periodically pause to regulate speed based on some speed setting TBD.
+            } else {
+                switch (RequestedState) {
+                    case CpuState.Running:
+                        if (currentState == CpuState.Stopped) {
+                            Run();
+                        }
+                        break;
+                    case CpuState.Halt:
+                        if (currentState == CpuState.Running) {
+                            currentState = CpuState.Halt;
+                        }
+                        break;
+                    case CpuState.Unchanged:
+                        break;
+                    case CpuState.Reset:
+                        if (currentState == CpuState.Stopped || currentState == CpuState.Running || currentState == CpuState.Halt)
+                        Reset();
+                        if (currentState == CpuState.Halt) {
+                            currentState = CpuState.Running;
+                        }
+                        break;
+                    case CpuState.Off:
+                        Off();
+                        break;
+                    case CpuState.On:
+                        On();
+                        break;
+                    case CpuState.Stopped:
+                        Stop();
+                        break;
+                    default: break;
+                }
+                RequestedState = CpuState.Unchanged;
+                Thread.Yield();
+            }
+        }
+        //Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+    }
+
+    private void Run() {
+        if (currentState == CpuState.Stopped) {
+            currentState = CpuState.Running;
+            RequestedState = CpuState.Unchanged;
         }
     }
 
-    public void Stop() {
-        IsRunning = false;
+    private void Stop() {
+        if (currentState == CpuState.Running || currentState == CpuState.Halt) {
+            currentState = CpuState.Stopped;
+            RequestedState = CpuState.Unchanged;
+        }
     }
+
+    private void On() {
+        if (currentState == CpuState.Off) {
+            currentState = CpuState.Stopped;
+            RequestedState = CpuState.Unchanged;
+        }
+    }
+
+    private void Off() {
+        Reset();
+        currentState = CpuState.Off;
+        RequestedState = CpuState.Unchanged;
+    }
+    public void SingleStep() {
+        if (currentState != CpuState.Stopped) {
+            return;
+        }
+
+        RunInstruction();
+    }
+
     #endregion Machine State
 
     #region Registers
@@ -230,28 +323,6 @@ public class Cpu8080A {
     #endregion Memory
 
     #region Execution
-    /// <summary>
-    /// Enter run mode, until a halt instruction is encountered.
-    /// We will need some means for external start-stop-reset-poweroff type control inputs.
-    /// </summary>
-    /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
-    public void Run() {
-        //Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
-        var instructionCount = 0;
-        IsRunning = true;
-        while (IsRunning) {
-            RunInstruction();
-            instructionCount++;
-            //if ((instructionCount & 0x002f) == 0) Thread.Sleep(1);
-            //Thread.Sleep(1); //<<< emulation runs slow but smooth with this
-            //Thread.Yield();  //<<< emulation runs faster but erratically
-                               //<<< emulation runs very poorly
-                               /* apparently dispatch queue is filling up with requests to update display?  npt really sure, but the multi-threading isn't
-                                * working as planned.  A shame the DispatcherQueue.TryEnqueueAsync extensions don't seem to work under WinAppSDK.
-                                */
-        }
-    }
-
     /// <summary>
     /// Run one instruction.  PC is advanced past instruction and any operand bytes.
     /// </summary>
@@ -780,7 +851,8 @@ public class Cpu8080A {
                 break; //mov m,l
             case 0x76:
                 cycles = 7;
-                IsRunning = false;
+                //IsRunning = false;
+                RequestedState = CpuState.Halt;
                 break; //hlt
             case 0x77:
                 M = A;
@@ -1964,7 +2036,7 @@ public class Cpu8080A {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize input on a system with numerous ports used (may be unlikely).
         if (port == 0xff) {
-            return Cpu8080A.InPortFF;    
+            return Cpu8080A.InPortFF;
         }
         byte inputValue = 0xff;
         if (Inputter is not null) {
