@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Newtonsoft.Json.Linq;
 
 namespace MFComputer.Hardware.Computer;
@@ -236,10 +237,18 @@ public class Cpu8080A {
     /// <param name="address">Address to begin execution, null for current PC, or default 0x100.</param>
     public void Run() {
         //Debug.WriteLine($"CPU8080A:Run() on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+        var instructionCount = 0;
         IsRunning = true;
         while (IsRunning) {
             RunInstruction();
-            Thread.Sleep(1);
+            instructionCount++;
+            //if ((instructionCount & 0x002f) == 0) Thread.Sleep(1);
+            //Thread.Sleep(1); //<<< emulation runs slow but smooth with this
+            //Thread.Yield();  //<<< emulation runs faster but erratically
+                               //<<< emulation runs very poorly
+                               /* apparently dispatch queue is filling up with requests to update display?  npt really sure, but the multi-threading isn't
+                                * working as planned.  A shame the DispatcherQueue.TryEnqueueAsync extensions don't seem to work under WinAppSDK.
+                                */
         }
     }
 
@@ -1844,7 +1853,6 @@ public class Cpu8080A {
                 break; //rst 7
                        //default: break;
         }
-        //Thread.Sleep(1);
         return cycles;
     }
 
@@ -1875,7 +1883,15 @@ public class Cpu8080A {
     // ref https://learn.microsoft.com/en-us/windows/communitytoolkit/extensions/dispatcherqueueextensions
 
     public delegate void OutputAction(byte port, byte value);
-    public OutputAction? Outputter;
+    //public OutputAction? Outputter;
+    public delegate void OutputPortValueSetCallback(byte port, byte value);
+    private Dictionary<byte, OutputPortValueSetCallback> OutputActions = new();
+    public byte[] LatchedOutputValues = new byte[256];
+    public bool RegisterOutputAction(byte port, PropertyChangedCallback cb) {
+        return true;
+    }
+
+
 
     public delegate byte InputAction(byte port);
     public InputAction? Inputter;
@@ -1894,8 +1910,6 @@ public class Cpu8080A {
     //}
 
 
-
-
     /// <summary>
     /// Send port output data to any enrolled delegates.
     /// </summary>
@@ -1904,29 +1918,37 @@ public class Cpu8080A {
     private void PortOutput(byte port, byte value) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize output on a system with numerous ports used.
-        if (Outputter is not null) {
-            //Outputter(port, value);
-            //Outputter.Invoke(port, value);
-            //var dq = App.MainWindow.DispatcherQueue;
-            //var dp = App.MainWindow.Dispatcher;
-            //if (dq.HasThreadAccess) {
-            //    Outputter(port, value);
-            //}
-            //else {
-            //    bool isQueued = dq.TryEnqueue(
-            //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
-            //    () => Outputter(port, value));
-            //}
-            
-            foreach (var Delegate in Outputter.GetInvocationList()) {
-                var outAction = Delegate as OutputAction;
-                _ = AppUIDispatcherQueue?.TryEnqueue(
-                    DispatcherQueuePriority.Normal,
-                    () => (outAction)?.Invoke(port, value)
-                );
-            }
-
+        OutputPortValueSetCallback? outputAction;
+        if (!OutputActions.TryGetValue(port, out outputAction)) {
+            LatchedOutputValues[port] = value;
+        } else {
+            _ = AppUIDispatcherQueue?.TryEnqueue(
+                DispatcherQueuePriority.Normal,
+                () => (outputAction)?.Invoke(port, value)
+            );
         }
+        //Outputter(port, value);
+        //Outputter.Invoke(port, value);
+        //var dq = App.MainWindow.DispatcherQueue;
+        //var dp = App.MainWindow.Dispatcher;
+        //if (dq.HasThreadAccess) {
+        //    Outputter(port, value);
+        //}
+        //else {
+        //    bool isQueued = dq.TryEnqueue(
+        //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+        //    () => Outputter(port, value));
+        //}
+
+        //foreach (var Delegate in Outputter.GetInvocationList()) {
+        //        var outAction = Delegate as OutputAction;
+        //        _ = AppUIDispatcherQueue?.TryEnqueue(
+        //            DispatcherQueuePriority.Normal,
+        //            () => (outAction)?.Invoke(port, value)
+        //        );
+        //    }
+
+        //}
     }
 
 

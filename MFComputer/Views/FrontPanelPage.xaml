@@ -14,11 +14,6 @@
             <RowDefinition Height="110" />
             <RowDefinition Height="200" />
             <RowDefinition Height="70" />
-            <RowDefinition Height="70" />
-            <RowDefinition Height="70" />
-            <RowDefinition Height="70" />
-            <RowDefinition Height="70" />
-            <RowDefinition Height="70" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="650" />
@@ -66,12 +61,6 @@
                              OnPanelChanged="ViewModel.ControlBank_Changed"/>
 
         <!-- temporary debug/demo stuff below -->
-        <Button Grid.Row="4" Grid.Column="0" Click="ViewModel.Increment_Output_Click">Increment Output</Button>
-        <Button Grid.Row="5" Grid.Column="0" Click="ViewModel.LEDLoop_Click">Load and run shifting LED program</Button>
-        <Button Grid.Row="6" Grid.Column="0" Click="ViewModel.Increment_Flags_Click">Increment Flags</Button>
-        <Button Grid.Row="7" Grid.Column="0" Click="ViewModel.Increment_Data_Click">Increment Data</Button>
-        <Button Grid.Row="8" Grid.Column="0" Click="ViewModel.Decrement_LowAddress_Click">Decrement Low Address</Button>
-        <Button Grid.Row="9" Grid.Column="0" Click="ViewModel.FetchSwitches_Click">Get Switches</Button>
-        <TextBlock Grid.Row="9" Grid.Column="1" x:Name="txtSwitches" Foreground="White" Text = "{x:Bind ViewModel.SwitchString, Mode=TwoWay}" />
+        <Button Grid.Row="4" Grid.Column="0" Click="ViewModel.LEDLoop_Click">Load and run shifting LED program</Button>
     </Grid>
 </Page>

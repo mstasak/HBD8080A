@@ -24,7 +24,7 @@ public sealed class ComputerSystemService {
     } = DispatcherQueue.GetForCurrentThread();
 
     public Thread? RunThread {
-        get; set; 
+        get; set;
     }
 
     private static readonly Lazy<ComputerSystemService> lazy =
@@ -34,9 +34,23 @@ public sealed class ComputerSystemService {
 
     private ComputerSystemService() {
         Debug.Assert(AppUIDispatcherQueue != null);
-        Cpu = new(AppUIDispatcherQueue: AppUIDispatcherQueue);
-        Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+        Cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
+        //Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+        IsOn = false;
+        IsTurbo = false;
+        IsRunning = false;
+    }
 
+    public bool IsOn {
+        get; set;
+    }
+
+    public bool IsRunning {
+        get; set;
+    }
+
+    public bool IsTurbo {
+        get; set;
     }
 
     public Cpu8080A Cpu {
@@ -48,7 +62,7 @@ public sealed class ComputerSystemService {
     }
 
     public void Run() {
-        if (runDispatcherQueueController == null) { 
+        if (runDispatcherQueueController == null) {
             runDispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
             runDispatcherQueue = runDispatcherQueueController.DispatcherQueue;
         }

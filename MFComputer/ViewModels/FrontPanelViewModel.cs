@@ -8,23 +8,7 @@ using Microsoft.UI.Dispatching;
 
 namespace MFComputer.ViewModels;
 
-public class FrontPanelViewModel : ObservableRecipient
-{
-    public FrontPanelViewModel()
-    {
-        OutputLEDs = 0; // 0x38;
-        AddressHighLEDs = 0; // 0xF0;
-        AddressLowLEDs = 0; // 0x03;
-        Computer = App.GetService<ComputerSystemService>();
-        Cpu = Computer.Cpu;
-        Cpu.Outputter += PortOutput;
-        //Cpu.Inputter += PortInput; //instead we push switch input values into Cpu8080A.InPortFF field
-        //Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
-    }
-
-    //public DispatcherQueue FrontPanelDispatcherQueue { // used by CPU8080A and/or ComputerSystemService code to access FP port values on UI thread
-    //    get; private set; } = DispatcherQueue.GetForCurrentThread(); //(ViewModel is construct in call from UI thread)
-
+public class FrontPanelViewModel : ObservableRecipient {
     private byte outputLEDs;
     private byte flagLEDs;
     private byte addressHighLEDs;
@@ -34,10 +18,26 @@ public class FrontPanelViewModel : ObservableRecipient
     private byte addressHighInputSwitches;
     private byte addressLowDataSwitches;
     private byte controlSwitches;
+    public DispatcherQueue FrontPanelDispatcherQueue { // used by CPU8080A and/or ComputerSystemService code to access FP port values on UI thread
+        get; private set;
+    } = DispatcherQueue.GetForCurrentThread(); //(ViewModel is constructed in call from UI thread)
+
+    private DispatcherQueueTimer RepeatingTimer {
+        get; set;
+    }
+
+    private enum PanelState {
+        Off,
+        Paused,
+        Running,
+        Frozen
+    }
+    private PanelState panelState = PanelState.Off;
+    private int PanelUpdateMSec = 250;
 
     public byte OutputLEDs {
         get => outputLEDs;
-        set => SetProperty(ref outputLEDs, value, nameof(OutputLEDs));
+        set => SetProperty(ref outputLEDs, value);
     }
     public byte FlagLEDs {
         get => flagLEDs;
@@ -50,12 +50,6 @@ public class FrontPanelViewModel : ObservableRecipient
     public byte AddressLowLEDs {
         get => addressLowLEDs;
         set => SetProperty(ref addressLowLEDs, value);
-    }
-    public ComputerSystemService Computer {
-        get;
-    }
-    public Cpu8080A Cpu {
-        get;
     }
     public byte MemoryDataLEDs {
         get => memoryDataLEDs;
@@ -81,8 +75,30 @@ public class FrontPanelViewModel : ObservableRecipient
         set => SetProperty(ref controlSwitches, value);
     }
 
+    public ComputerSystemService Computer {
+        get;
+    }
+    public Cpu8080A Cpu {
+        get;
+    }
+
+    public FrontPanelViewModel() {
+        OutputLEDs = 0;
+        AddressHighLEDs = 0;
+        AddressLowLEDs = 0;
+        MemoryDataLEDs = 0;
+        FlagLEDs = 0;
+        StatusLEDs = 0;
+
+        Computer = App.GetService<ComputerSystemService>();
+        Cpu = Computer.Cpu;
+        ConfigureRefresh();
+        //Cpu.Outputter += PortOutput;
+        //Cpu.Inputter += PortInput; //instead we push switch input values into Cpu8080A.InPortFF field
+        //Debug.WriteLine($"FrontPanelViewModel on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
+    }
     //private void PortInput(byte port, Cpu8080A.InputReceiver handler) {
-        
+
     //    var dq = App.MainWindow.DispatcherQueue;
     //    if (dq.HasThreadAccess) {
     //        if (port == 0xff) {
@@ -111,14 +127,12 @@ public class FrontPanelViewModel : ObservableRecipient
     //    }
     //}
 
+    //Currently this is not used; output port ff has a value stored in the CPU object as LatchedOutputValues[0xff]
+    //a running program should periodically (no more than say 60 times per second?) check this value and copy it to the output leds.
     private void PortOutput(byte port, byte value) {
         if (port == 0xff) {
             OutputLEDs = value;
         }
-    }
-
-    public void Increment_Output_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        OutputLEDs = (byte)(OutputLEDs + 1);
     }
 
     public void LEDLoop_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
@@ -126,6 +140,8 @@ public class FrontPanelViewModel : ObservableRecipient
         Computer.Stop();
         Computer.Reset();
         ushort pc = 0;
+
+        //dumb loop - in switches, out leds, repeat
         //Cpu.Memory[pc++] = 0xDB; // in 0FFH
         //Cpu.Memory[pc++] = 0xFF;
         //Cpu.Memory[pc++] = 0xD3; // out 0FFH
@@ -134,102 +150,79 @@ public class FrontPanelViewModel : ObservableRecipient
         //Cpu.Memory[pc++] = 0x00;
         //Cpu.Memory[pc++] = 0x00;
 
-        Cpu.Memory[pc++] = 0x16; // 0000:   mvi d,01H
+        //slightly more complex - rotate a light from right to left endlessly, pacing rotation based on input switches
+        Cpu.Memory[pc++] = 0x16; // 0000:   mvi d,01H ; value to display
         Cpu.Memory[pc++] = 0x01; //
-        Cpu.Memory[pc++] = 0xDB; // 0002:   in 0FFH
+        Cpu.Memory[pc++] = 0xDB; // 0002:   in 0FFH   ; get switches (delay loop count value)
         Cpu.Memory[pc++] = 0xFF; //
-        Cpu.Memory[pc++] = 0x47; // 0004:   mov b,a
-        Cpu.Memory[pc++] = 0x7A; // 0005:   mov a,d
-        Cpu.Memory[pc++] = 0x07; // 0006:   rlc
-        Cpu.Memory[pc++] = 0xD3; // 0007:   out 0FFH
+        Cpu.Memory[pc++] = 0x47; // 0004:   mov b,a   ; save for reuse
+        Cpu.Memory[pc++] = 0x7A; // 0005:   mov a,d   ; get display value
+        Cpu.Memory[pc++] = 0x07; // 0006:   rlc       ; rotate
+        Cpu.Memory[pc++] = 0xD3; // 0007:   out 0FFH  ; display
         Cpu.Memory[pc++] = 0xFF; //
-        Cpu.Memory[pc++] = 0x57; // 0009:   mov d,a
-        Cpu.Memory[pc++] = 0x48; // 000A:   mov c,b
-        Cpu.Memory[pc++] = 0x0D; // 000B:   dcr c
-        Cpu.Memory[pc++] = 0xC2; // 000C:   jnz 000BH
+        Cpu.Memory[pc++] = 0x57; // 0009:   mov d,a   ; save new value
+        Cpu.Memory[pc++] = 0x48; // 000A:   mov c,b   ; copy the delay count to a temp register
+        Cpu.Memory[pc++] = 0x0D; // 000B:   dcr c     ; decrement
+        Cpu.Memory[pc++] = 0xC2; // 000C:   jnz 000BH ; repeat until zero
         Cpu.Memory[pc++] = 0x0B; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0xC3; // 000F:   jmp 0002H
+        Cpu.Memory[pc++] = 0xC3; // 000F:   jmp 0002H ; refresh delay count and repeat rotate
         Cpu.Memory[pc++] = 0x02; //
         Cpu.Memory[pc++] = 0x00; //
-        
+
         Computer.Run();
-    }
-
-    public void Increment_HighAddress_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        AddressHighLEDs = (byte)(AddressHighLEDs + 1);
-    }
-
-    public void Increment_Flags_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        FlagLEDs = (byte)(FlagLEDs + 4);
-    }
-    public void Increment_Data_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        MemoryDataLEDs = (byte)(MemoryDataLEDs + 1);
-    }
-    public void Decrement_LowAddress_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        AddressLowLEDs = (byte)(AddressLowLEDs - 1);
-    }
-
-    private string switchString = "click to fetch values";
-    public string SwitchString {
-        get => switchString;
-        set => SetProperty(ref switchString, value, nameof(SwitchString));
-    }
-    public void FetchSwitches_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        //AddressHighInputSwitches = 0xfa;
-        var s = $"{AddressHighInputSwitches:x2} {AddressLowDataSwitches:x2} {ControlSwitches:x2}";
-        SwitchString = s;
     }
 
     public void ControlBank_Changed(object sender, FrontPanelInputRowEventArgs e) {
         if (e.ButtonPresses.HasValue) {
-            Debug.WriteLine($"simple button press: {e.ButtonPresses.Value}");
+            //Debug.WriteLine($"simple button press: {e.ButtonPresses.Value}");
             var buttons = e.ButtonPresses.Value;
             if ((buttons & 0x10) != 0) { // single step
+                if (Computer.IsRunning) return;
+                Cpu.RunInstruction();
             }
             if ((buttons & 0x08) != 0) { // reset
+                if (Computer.IsRunning ) return;
+                Cpu.Reset();
             }
         }
         if (e.ButtonUpPresses.HasValue) {
-            Debug.WriteLine($"toggle button up press: {e.ButtonUpPresses.Value}");
+            //Debug.WriteLine($"toggle button up press: {e.ButtonUpPresses.Value}");
             var buttons = e.ButtonUpPresses.Value;
-            if (((buttons & 0x80) != 0) && (! Cpu.IsRunning)) { // examine toggle up
+            if (((buttons & 0x80) != 0) && (!Cpu.IsRunning)) { // examine toggle up
                 Cpu.PC = (ushort)((AddressHighInputSwitches << 8) | AddressLowDataSwitches);
-                AddressHighLEDs = (byte)(Cpu.PC >> 8);
-                AddressLowLEDs = (byte)(Cpu.PC & 0xff);
-                RefreshMemoryDataDisplay();
             }
-            if (((buttons & 0x40) != 0) && (! Cpu.IsRunning)) { // deposit toggle up
+            if (((buttons & 0x40) != 0) && (!Cpu.IsRunning)) { // deposit toggle up
                 Cpu.Memory[Cpu.PC] = AddressLowDataSwitches;
-                RefreshMemoryDataDisplay();
+                //RefreshMemoryDataDisplay();
             }
             if ((buttons & 0x20) != 0) { // run toggle up
+                if (! Computer.IsRunning) {
+                    Computer.Run();
+                }
             }
         }
         if (e.ButtonDownPresses.HasValue) {
             Debug.WriteLine($"toggle button down press: {e.ButtonDownPresses.Value}");
             var buttons = e.ButtonDownPresses.Value;
-            if (((buttons & 0x80) != 0) && (! Cpu.IsRunning)) { // examine next toggle down
+            if (((buttons & 0x80) != 0) && (!Cpu.IsRunning)) { // examine next toggle down
                 unchecked {
                     Cpu.PC++;
                 }
-                AddressHighLEDs = (byte)(Cpu.PC >> 8);
-                AddressLowLEDs = (byte)(Cpu.PC & 0xff);
-                RefreshMemoryDataDisplay();
             }
-            if (((buttons & 0x40) != 0) && (! Cpu.IsRunning)) { // deposit next toggle down
+            if (((buttons & 0x40) != 0) && (!Cpu.IsRunning)) { // deposit next toggle down
                 unchecked {
                     Cpu.PC++;
                 }
-                AddressHighLEDs = (byte)(Cpu.PC >> 8);
-                AddressLowLEDs = (byte)(Cpu.PC & 0xff);
                 Cpu.Memory[Cpu.PC] = AddressLowDataSwitches;
-                RefreshMemoryDataDisplay();
             }
             if ((buttons & 0x20) != 0) { // stop toggle down
+                if (Computer.IsRunning) {
+                    Computer.Stop();
+                }
             }
         }
-        
+
         // persistent switch states are not useful without prior value to compare to;
         // bindings already keep the property value updated.
         //if (e.SwitchStates.HasValue) {
@@ -241,7 +234,53 @@ public class FrontPanelViewModel : ObservableRecipient
         //}
     }
 
-    private void RefreshMemoryDataDisplay() {
-        MemoryDataLEDs = Cpu.Memory[Cpu.PC];
+    private void ConfigureRefresh() {
+        //set to fast pace when running, slow when stopped or off
+        if (RepeatingTimer is null) {
+            RepeatingTimer = FrontPanelDispatcherQueue.CreateTimer();
+            // The tick handler will be invoked repeatedly after every 5
+            // seconds on the dedicated thread.
+            RepeatingTimer.Tick += (s, e) => {
+                RefreshFrontPanel();
+            };
+        }
+        if (Computer.IsRunning) {
+            RepeatingTimer.Interval = TimeSpan.FromMicroseconds(1000 * 100);
+        }
+        else {
+            RepeatingTimer.Interval = TimeSpan.FromMicroseconds(1000 * 16);
+        }
+        if (!RepeatingTimer.IsRunning) {
+            // Start the Timer
+            RepeatingTimer.Start();
+        }
+
+    }
+
+    private void RefreshFrontPanel() {
+        var pc = Cpu.PC;
+        var flags = Cpu.Flags;
+        var intEnb = Cpu.IsInterruptsEnabled;
+        MemoryDataLEDs = Cpu.Memory[pc];
+        AddressHighLEDs = (byte)(pc >> 8);
+        AddressLowLEDs = (byte)(pc & 0xff);
+        OutputLEDs = Cpu.LatchedOutputValues[0xff];
+
+        //Int Enabled,Zero,Sign,Parity,Carry,Aux Carry
+        FlagLEDs = (byte)(
+            (intEnb ? 0x80 : 0x00) |
+            (((flags & Cpu8080A.zeroflag) != 0) ? 0x40 : 0x00) |
+            (((flags & Cpu8080A.signflag) != 0) ? 0x20 : 0x00) |
+            (((flags & Cpu8080A.parityflag) != 0) ? 0x10 : 0x00) |
+            (((flags & Cpu8080A.carryflag) != 0) ? 0x08 : 0x00) |
+            (((flags & Cpu8080A.auxcarryflag) != 0) ? 0x04 : 0x00)
+        );
+
+        //Turbo,Halt,Power
+        StatusLEDs = (byte)(
+            (Computer.IsTurbo ? 0x80 : 0x00) |
+            (Computer.IsRunning ? 0x40 : 0x00) |
+            (Computer.IsOn ? 0x20 : 0x00)
+        );
     }
 }
