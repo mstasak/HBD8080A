@@ -17,6 +17,9 @@ toggle-switch front panel debate. :)
 Status: running well from the front panel.  Speed equivalent to approximately
 40MHz 8080A (on a Ryzen 5500 host).  Host load about 1.0 logical core.
 
+*Update: tested speed for a release build, got 638-645 MHz!  This is a small program though, 
+mostly mov, dcr, jnz, jmp instructions.  Results should vary for a different mix of instructions.
+
 Next: implement a dumb terminal (teletype-ish).  Make a monitor program, or try to run
 a significant program, like IMSAI SCS or Palo Alto Tiny Basic.
 
