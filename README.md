@@ -17,7 +17,7 @@ toggle-switch front panel debate. :)
 Status: running well from the front panel.  Speed equivalent to approximately
 40MHz 8080A (on a Ryzen 5500 host).  Host load about 1.0 logical core.
 
-Next: implement a dumb terminal (teletype-ish).  Make a monitor, ot try to run
+Next: implement a dumb terminal (teletype-ish).  Make a monitor program, or try to run
 a significant program, like IMSAI SCS or Palo Alto Tiny Basic.
 
 ![image](https://github.com/mstasak/MFComputer/assets/39843617/fe0ce289-b7da-4ed7-814a-4bbbf9c7bebb)
