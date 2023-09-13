@@ -14,15 +14,14 @@ computers, the Altair 8800 and IMSAI 8080.  Precursors of the TRS-80, IBM PC,
 and eventually modern PCs.  And arch-rivals in the great paddle-switch vs 
 toggle-switch front panel debate. :)
 
-Status: early, raw.  An 8080A CPU class is mostly completed, although further
-work remains for refactoring/renaming, speed control, I/O, testing and
-optimization.
+Status: running well from the front panel.  Speed equivalent to approximately
+40MHz 8080A (on a Ryzen 5500 host).  Host load about 1.0 logical core.
 
-Currently working on a front panel, and sketching out some peripheral and RTL
-plans, soon to begin a basic load and run capability so I can do
-blinkin'-lights experiments.
+Next: implement a dumb terminal (teletype-ish).  Make a monitor, ot try to run
+a significant program, like IMSAI SCS or Palo Alto Tiny Basic.
 
-![image](https://github.com/mstasak/MFComputer/assets/39843617/18701fb2-5e8f-4853-a0cb-f57a2e125b8f)
+![image](https://github.com/mstasak/MFComputer/assets/39843617/9d351e62-49d2-45dc-9158-1e8ad7233cd8)
+
 
 
 
