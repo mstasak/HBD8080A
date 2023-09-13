@@ -65,7 +65,9 @@ public class Cpu8080A {
         Unchanged
     }
 
-
+    public long CpuCycles {
+        get; set;
+    } = 0;
     private CpuState currentState = CpuState.Off;
     public CpuState CurrentState => currentState;
     public CpuState RequestedState = CpuState.Unchanged;
@@ -1925,6 +1927,7 @@ public class Cpu8080A {
                 break; //rst 7
                        //default: break;
         }
+        CpuCycles += cycles;
         return cycles;
     }
 

@@ -76,6 +76,9 @@ public class FrontPanelViewModel : ObservableRecipient {
         set => SetProperty(ref controlSwitches, value);
     }
 
+    public string FrequencyEstimate {
+        get => frequencyEstimate; set => SetProperty(ref frequencyEstimate, value);
+    }
     public ComputerSystemService Computer {
         get;
     }
@@ -287,5 +290,24 @@ public class FrontPanelViewModel : ObservableRecipient {
             isFast = !isFast;
             ConfigureRefresh(isFast);
         }
+
+        //speed estimate
+        long cycles = Cpu.CpuCycles;
+        DateTime now = DateTime.Now;
+        TimeSpan interval = now - tsStart;
+        if (interval > TimeSpan.FromMilliseconds(500)) {
+            long intervalCycles = cycles - cyclesStart;
+            tsStart = now;
+            cyclesStart = cycles;
+            FrequencyEstimate = $"Approx. {intervalCycles / 1000.0 / (interval.Milliseconds)} MHz";
+            //FrequencyEstimate = "test";
+        }
+
+
     }
+    private static long cyclesStart = 0;
+    //private static long cyclesEnd = 0;
+    private static DateTime tsStart = DateTime.Now;
+    private string frequencyEstimate = "initvalue";
+    //private static DateTime tsEnd = DateTime.Now;
 }

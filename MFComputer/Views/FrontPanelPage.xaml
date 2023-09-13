@@ -62,5 +62,7 @@
 
         <!-- temporary debug/demo stuff below -->
         <Button Grid.Row="4" Grid.Column="0" Click="ViewModel.LEDLoop_Click">Load and run shifting LED program</Button>
+        <TextBlock Grid.Row="4" Grid.Column="1" Foreground="White">Effective CPU speed (8080A CPU cycles per second):</TextBlock>
+        <TextBlock x:Name="lblCpuFreq" Grid.Row="4" Grid.Column="2" Text="{x:Bind ViewModel.FrequencyEstimate, Mode=OneWay}" Foreground="White"/>
     </Grid>
 </Page>
