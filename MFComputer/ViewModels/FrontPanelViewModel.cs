@@ -22,19 +22,20 @@ public class FrontPanelViewModel : ObservableRecipient {
         get; private set;
     } = DispatcherQueue.GetForCurrentThread(); //(ViewModel is constructed in call from UI thread)
 
-    private DispatcherQueueTimer RepeatingTimer {
+    private DispatcherQueueTimer? RepeatingTimer {
         get; set;
     }
     private bool isFast = false;
 
-    private enum PanelState {
-        Off,
-        Paused,
-        Running,
-        Frozen
-    }
-    private PanelState panelState = PanelState.Off;
-    private int PanelUpdateMSec = 250;
+    //private enum PanelState {
+    //    Off,
+    //    Paused,
+    //    Running,
+    //    Frozen
+    //}
+    
+    //private PanelState panelState = PanelState.Off;
+    //private int PanelUpdateMSec = 250;
 
     public byte OutputLEDs {
         get => outputLEDs;
@@ -168,11 +169,19 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xFF; //
         Cpu.Memory[pc++] = 0x57; // 0009:   mov d,a   ; save new value
         Cpu.Memory[pc++] = 0x48; // 000A:   mov c,b   ; copy the delay count to a temp register
-        Cpu.Memory[pc++] = 0x0D; // 000B:   dcr c     ; decrement
-        Cpu.Memory[pc++] = 0xC2; // 000C:   jnz 000BH ; repeat until zero
+
+        Cpu.Memory[pc++] = 0x3E; // 000B:   mvi a,01H ; value to display
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0x3D; // 000D:   dcr a     ; decrement
+        Cpu.Memory[pc++] = 0xC2; // 000E:   jnz 000DH ; repeat until zero
+        Cpu.Memory[pc++] = 0x0D; //
+        Cpu.Memory[pc++] = 0x00; //
+
+        Cpu.Memory[pc++] = 0x0D; // 0011:   dcr c     ; decrement
+        Cpu.Memory[pc++] = 0xC2; // 0012:   jnz 000BH ; repeat until zero
         Cpu.Memory[pc++] = 0x0B; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0xC3; // 000F:   jmp 0002H ; refresh delay count and repeat rotate
+        Cpu.Memory[pc++] = 0xC3; // 0015:   jmp 0002H ; refresh delay count and repeat rotate
         Cpu.Memory[pc++] = 0x02; //
         Cpu.Memory[pc++] = 0x00; //
     }
@@ -204,7 +213,7 @@ public class FrontPanelViewModel : ObservableRecipient {
             }
         }
         if (e.ButtonDownPresses.HasValue) {
-            Debug.WriteLine($"toggle button down press: {e.ButtonDownPresses.Value}");
+            //Debug.WriteLine($"toggle button down press: {e.ButtonDownPresses.Value}");
             var buttons = e.ButtonDownPresses.Value;
             if (((buttons & 0x80) != 0) && (Cpu.CurrentState == Cpu8080A.CpuState.Stopped)) { // examine next toggle down
                 unchecked {
@@ -292,22 +301,19 @@ public class FrontPanelViewModel : ObservableRecipient {
         }
 
         //speed estimate
-        long cycles = Cpu.CpuCycles;
-        DateTime now = DateTime.Now;
-        TimeSpan interval = now - tsStart;
-        if (interval > TimeSpan.FromMilliseconds(500)) {
-            long intervalCycles = cycles - cyclesStart;
+        var now = DateTime.Now;
+        var cycles = Cpu.CpuCycles;
+        var interval = now - tsStart;
+        if (interval > TimeSpan.FromMilliseconds(1000)) {
+            var intervalCycles = (double)cycles - cyclesStart;
             tsStart = now;
             cyclesStart = cycles;
-            FrequencyEstimate = $"Approx. {intervalCycles / 1000.0 / (interval.Milliseconds)} MHz";
-            //FrequencyEstimate = "test";
+            FrequencyEstimate = $"Approx. {intervalCycles / 1000.0 / (interval.TotalMilliseconds):N3} MHz ({intervalCycles} cycles / {interval.TotalMilliseconds} msec)";
         }
 
 
     }
     private static long cyclesStart = 0;
-    //private static long cyclesEnd = 0;
     private static DateTime tsStart = DateTime.Now;
     private string frequencyEstimate = "initvalue";
-    //private static DateTime tsEnd = DateTime.Now;
 }

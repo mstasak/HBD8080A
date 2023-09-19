@@ -121,8 +121,10 @@ public class Cpu8080A {
                     case CpuState.Unchanged:
                         break;
                     case CpuState.Reset:
-                        if (currentState == CpuState.Stopped || currentState == CpuState.Running || currentState == CpuState.Halt)
-                        Reset();
+                        if (currentState == CpuState.Stopped || currentState == CpuState.Running || currentState == CpuState.Halt) {
+                            Reset();
+                        }
+
                         if (currentState == CpuState.Halt) {
                             currentState = CpuState.Running;
                         }
@@ -340,6 +342,7 @@ public class Cpu8080A {
         bool newAuxCarry;
         //Debug.WriteLine($"Addr: {PC-1:X2}  Opcode: {Memory[PC-1]:X2} Operands?: {Memory[PC]:X2} {Memory[PC+1]:X2}");
         switch (opcode) {
+            #region Execution 0x00-0x3F
             case 0x00:
                 break; //nop (4 cycles)
             case 0x01:
@@ -641,6 +644,8 @@ public class Cpu8080A {
             case 0x3f:
                 Flags = (byte)(Flags ^ carryflag);
                 break; //CMC
+            #endregion Execution 0x00-0x3F
+            #region Execution 0x40-0x7F
             case 0x40:
                 cycles = 5;
                 break; //mov b,b
@@ -891,6 +896,8 @@ public class Cpu8080A {
             case 0x7f:
                 cycles = 5;
                 break; //mov a,a
+            #endregion Execution 0x40-0x7F
+            #region Execution 0x80-0xBF
             case 0x80:
                 bTmp = A;
                 wTmp = (ushort)(bTmp + B);
@@ -1515,6 +1522,8 @@ public class Cpu8080A {
                                | (newAuxCarry ? auxcarryflag : 0)); //CY,AC
                 //cycles = 4;
                 break; //cmp a
+            #endregion Execution 0x80-0xBF
+            #region Execution 0xC0-0xFF
             case 0xc0:
                 if ((Flags & zeroflag) == 0) {
                     PC = PopWord();
@@ -1926,6 +1935,7 @@ public class Cpu8080A {
                 cycles = 11;
                 break; //rst 7
                        //default: break;
+            #endregion Execution 0xC0-0xFF
         }
         CpuCycles += cycles;
         return cycles;
@@ -2061,10 +2071,6 @@ public class Cpu8080A {
 
 }
 
-
 //TODO: remove unchecked statements and expressions, as this is default mode
 //TODO: add readonly range checks to all memory writes
-//TODO: fix input issue
-//TODO: run on background thread, with external control inputs to change machine state (run/stop/throttle/single step/startup/shutdown/reset)
-//TODO: (in XAML) set up a "front panel" to simulate input switches, output leds, PC and flag displays, and a small region of memory; include single step button
 //TODO: optimization - use 256-byte lookup table for Z,S,P flags for speed (parity addition is slow)

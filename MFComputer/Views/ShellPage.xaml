@@ -36,7 +36,8 @@
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Main" Command="{x:Bind ViewModel.MenuViewsMainCommand}" />
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Status" Command="{x:Bind ViewModel.MenuViewsStatusCommand}" />
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Testbed" Command="{x:Bind ViewModel.MenuViewsTestbedCommand}" />
-                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_FrontPanel" Command="{x:Bind ViewModel.MenuViewsFrontPanelCommand}" />
+                        <!--<MenuFlyoutItem x:Uid="ShellMenuItem_Views_FrontPanel" Command="{x:Bind ViewModel.MenuViewsFrontPanelCommand}" />-->
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Terminal" Command="{x:Bind ViewModel.MenuViewsTerminalCommand}" />
                     </MenuBarItem.Items>
                 </MenuBarItem>
             </MenuBar>

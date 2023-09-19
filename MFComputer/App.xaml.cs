@@ -65,6 +65,7 @@ public partial class App : Application
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton(ComputerSystemService.Instance);
+            services.AddSingleton(DumbTerminalService.Instance);
             //services.AddSingleton(FrontPanelDataService.Instance);
 
             // Core Services
@@ -74,6 +75,8 @@ public partial class App : Application
             services.AddSingleton<Hardware.Computer.Cpu8080A>();
 
             // Views and ViewModels
+            services.AddTransient<TerminalViewModel>();
+            services.AddTransient<TerminalPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
             services.AddTransient<MainPage>();

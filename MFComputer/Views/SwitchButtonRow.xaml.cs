@@ -156,21 +156,22 @@ public sealed partial class SwitchButtonRow : UserControl {
                     //rockerSwitch.Background = ButtonBackground; //Had trouble with this button having a lighter background
 
                     //bind switch[0-7].IsOn to switchbank0.Switch[7-0]On
-                    var b = new Binding();
-                    b.Source = SwitchBank0;
-                    b.Path = i switch {
-                        0 => new PropertyPath(nameof(SwitchBank0.Switch7On)),
-                        1 => new PropertyPath(nameof(SwitchBank0.Switch6On)),
-                        2 => new PropertyPath(nameof(SwitchBank0.Switch5On)),
-                        3 => new PropertyPath(nameof(SwitchBank0.Switch4On)),
-                        4 => new PropertyPath(nameof(SwitchBank0.Switch3On)),
-                        5 => new PropertyPath(nameof(SwitchBank0.Switch2On)),
-                        6 => new PropertyPath(nameof(SwitchBank0.Switch1On)),
-                        7 => new PropertyPath(nameof(SwitchBank0.Switch0On)),
-                        _ => null
+                    var b = new Binding {
+                        Source = SwitchBank0,
+                        Path = i switch {
+                            0 => new PropertyPath(nameof(SwitchBank0.Switch7On)),
+                            1 => new PropertyPath(nameof(SwitchBank0.Switch6On)),
+                            2 => new PropertyPath(nameof(SwitchBank0.Switch5On)),
+                            3 => new PropertyPath(nameof(SwitchBank0.Switch4On)),
+                            4 => new PropertyPath(nameof(SwitchBank0.Switch3On)),
+                            5 => new PropertyPath(nameof(SwitchBank0.Switch2On)),
+                            6 => new PropertyPath(nameof(SwitchBank0.Switch1On)),
+                            7 => new PropertyPath(nameof(SwitchBank0.Switch0On)),
+                            _ => null
+                        },
+                        Mode = BindingMode.TwoWay,
+                        UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
                     };
-                    b.Mode = BindingMode.TwoWay;
-                    b.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
                     rockerSwitch.SetBinding(ToggleSwitch.IsOnProperty, b);
                     rockerSwitch.Toggled += RockerSwitch_Toggled;
 

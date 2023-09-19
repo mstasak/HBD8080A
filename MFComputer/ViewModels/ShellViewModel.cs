@@ -10,11 +10,16 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace MFComputer.ViewModels;
 
-public class ShellViewModel : ObservableRecipient
+public partial class ShellViewModel : ObservableRecipient
 {
     private bool _isBackEnabled;
 
     public ICommand MenuFileExitCommand
+    {
+        get;
+    }
+
+    public ICommand MenuViewsTerminalCommand
     {
         get;
     }
@@ -33,10 +38,10 @@ public class ShellViewModel : ObservableRecipient
         get;
     }
 
-    public ICommand MenuViewsFrontPanelCommand
-    {
-        get;
-    }
+    //public ICommand MenuViewsFrontPanelCommand
+    //{
+    //    get;
+    //}
 
     public ICommand MenuViewsMainCommand
     {
@@ -60,8 +65,9 @@ public class ShellViewModel : ObservableRecipient
         NavigationService.Navigated += OnNavigated;
 
         MenuFileExitCommand = new RelayCommand(OnMenuFileExit);
+        MenuViewsTerminalCommand = new RelayCommand(OnMenuViewsTerminal);
         MenuViewsTestbedCommand = new RelayCommand(OnMenuViewsTestbed);
-        MenuViewsFrontPanelCommand = new RelayCommand(OnMenuViewsFrontPanel);
+        //MenuViewsFrontPanelCommand = new RelayCommand(OnMenuViewsFrontPanel);
         MenuSettingsCommand = new RelayCommand(OnMenuSettings);
         MenuViewsStatusCommand = new RelayCommand(OnMenuViewsStatus);
         MenuViewsMainCommand = new RelayCommand(OnMenuViewsMain);
@@ -71,8 +77,10 @@ public class ShellViewModel : ObservableRecipient
 
     private void OnMenuFileExit() => Application.Current.Exit();
 
+    private void OnMenuViewsTerminal() => NavigationService.NavigateTo(typeof(TerminalViewModel).FullName!);
+
     private void OnMenuViewsTestbed() => NavigationService.NavigateTo(typeof(TestbedViewModel).FullName!);
-    private void OnMenuViewsFrontPanel() => NavigationService.NavigateTo(typeof(FrontPanelViewModel).FullName!);
+    //private void OnMenuViewsFrontPanel() => NavigationService.NavigateTo(typeof(FrontPanelViewModel).FullName!);
 
     private void OnMenuSettings() => NavigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
 

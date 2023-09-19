@@ -1,0 +1,21 @@
+﻿<Page
+    x:Class="MFComputer.Views.TerminalPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid x:Name="ContentArea">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="480" />
+            <RowDefinition Height="20" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal">
+            <ToggleSwitch IsOn="{x:Bind ViewModel.Terminal.IsOn,Mode=TwoWay}">Dumb TTY-ish Terminal</ToggleSwitch>
+        </StackPanel>
+ 
+        <!-- <TextBox Grid.Row="1" x:Uid="Terminal_PromptLine" /> -->
+    </Grid>
+</Page>

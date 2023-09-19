@@ -1,10 +1,11 @@
-﻿{
-    "profiles": {
-      "MFComputer (Package)": {
-        "commandName": "MsixPackage"
-      },
-      "MFComputer (Unpackaged)": {
-        "commandName": "Project"
-      }
+{
+  "profiles": {
+    "MFComputer (Package)": {
+      "commandName": "MsixPackage",
+      "nativeDebugging": true
+    },
+    "MFComputer (Unpackaged)": {
+      "commandName": "Project"
     }
+  }
 }

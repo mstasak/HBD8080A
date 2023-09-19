@@ -191,4 +191,11 @@
     <value>Front Panel</value>
     <comment>Page title for FrontPanelPage</comment>
   </data>
+  <data name="ShellMenuItem_Views_Terminal.Text" xml:space="preserve">
+    <value>Terminal</value>
+  </data>
+  <data name="Terminal_Title.Text" xml:space="preserve">
+    <value>Terminal</value>
+    <comment>Page title for TerminalPage</comment>
+  </data>
 </root>
