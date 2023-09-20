@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using MFComputer.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -11,6 +12,15 @@ public class Cpu8080A {
         get;
     }
 
+    private DumbTerminalService terminal = null;
+    public DumbTerminalService Terminal {
+        get {
+            if (terminal == null) {
+                terminal = App.GetService<DumbTerminalService>();
+            }
+            return terminal;
+        }
+    }
     public Cpu8080A(DispatcherQueue? AppUIDispatcherQueue) {
         this.AppUIDispatcherQueue = AppUIDispatcherQueue;
         //Debug.WriteLine($"CPU8080A:ctor on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
@@ -2003,7 +2013,13 @@ public class Cpu8080A {
     private void PortOutput(byte port, byte value) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize output on a system with numerous ports used.
+        if (port == 0x01) { //write to dumbtty display
+            Terminal.WriteChar((char)value);
+            return;
+        }
+        
         OutputPortValueSetCallback? outputAction;
+
         if (!OutputActions.TryGetValue(port, out outputAction)) {
             LatchedOutputValues[port] = value;
         } else {
@@ -2048,8 +2064,16 @@ public class Cpu8080A {
     private byte PortInput(byte port) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize input on a system with numerous ports used (may be unlikely).
-        if (port == 0xff) {
+        if (port == 0xff) { //sense switches
             return Cpu8080A.InPortFF;
+        }
+        if (port == 0x01) { //DumbTTY keyboard input
+            var ch = Terminal.ReadChar();
+            if (ch != null) {
+                return (byte)ch;
+            } else {
+                return 0; //maybe should change type to int and return -1 when "not ready"?
+            }
         }
         byte inputValue = 0xff;
         if (Inputter is not null) {

@@ -186,6 +186,115 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0x00; //
     }
 
+    public void TerminalTest_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+        //OutputLEDs = (byte)(OutputLEDs + 1);
+        if (Cpu.CurrentState != Cpu8080A.CpuState.Stopped) {
+            return;
+        }
+        Cpu.Reset();
+        ushort pc = 0;
+
+        Cpu.Memory[pc++] = 0x31; //0000 LXI SP, 0F000H
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xF0; //
+        Cpu.Memory[pc++] = 0x21; //0003 LXI H,HELLOMSG
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xCD; //0006 CALL WRITESTR
+        Cpu.Memory[pc++] = 0x30; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xDB; //0009 IN 1
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xA7; //000B ORA A
+        Cpu.Memory[pc++] = 0xCA; //000C JZ 0000BH
+        Cpu.Memory[pc++] = 0x0B; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0x21; //000F LXI H,TYPEMSG1 ;"   You typed: '"
+        Cpu.Memory[pc++] = 0x1E; //
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xCD; //0012 CALL WRITESTR
+        Cpu.Memory[pc++] = 0x30; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xD3; //0015 OUT 1
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0x21; //0017 LXI H,TYPEMSG2 ;"'\r\n"
+        Cpu.Memory[pc++] = 0x2C; //
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xCD; //001A CALL WRITESTR
+        Cpu.Memory[pc++] = 0x30; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xC3; //001D JMP 00009H
+        Cpu.Memory[pc++] = 0x09; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc+=16]=0x00; //0020 DS 16
+        Cpu.Memory[pc++] = 0xF5; //0030 WRITESTR: PUSH PSW
+        Cpu.Memory[pc++] = 0xE5; //0031 PUSH H
+        Cpu.Memory[pc++] = 0x7E; //0031 MOV A,M
+        Cpu.Memory[pc++] = 0xA7; //0033 ORA A
+        Cpu.Memory[pc++] = 0xCA; //0034 JZ EXITWRITESTR
+        Cpu.Memory[pc++] = 0x3D; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xD3; //0037 OUT 1
+        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0x23; //0039 INX H
+        Cpu.Memory[pc++] = 0xC3; //003A JMP 0031
+        Cpu.Memory[pc++] = 0x31; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0xE1; //003D EXITWRITESTR: POP H
+        Cpu.Memory[pc++] = 0xF1; //003E POP PSW
+        Cpu.Memory[pc++] = 0xC9; //003F RET
+        pc=0X100;                //ORG 100H
+        Cpu.Memory[pc++] = 0x48; //0100 HELLOMSG: DB "Hello World, from MFComputer!",0
+        Cpu.Memory[pc++] = 0x65; //
+        Cpu.Memory[pc++] = 0x6C; //
+        Cpu.Memory[pc++] = 0x6C; //
+        Cpu.Memory[pc++] = 0x6F; //
+        Cpu.Memory[pc++] = 0x20; //
+        Cpu.Memory[pc++] = 0x57; //
+        Cpu.Memory[pc++] = 0x6F; //
+        Cpu.Memory[pc++] = 0x72; //
+        Cpu.Memory[pc++] = 0x6C; //
+        Cpu.Memory[pc++] = 0x64; //
+        Cpu.Memory[pc++] = 0x2C; //
+        Cpu.Memory[pc++] = 0x20; //
+        Cpu.Memory[pc++] = 0x66; // 
+        Cpu.Memory[pc++] = 0x72; //
+        Cpu.Memory[pc++] = 0x6F; //
+        Cpu.Memory[pc++] = 0x6D; //
+        Cpu.Memory[pc++] = 0x20; //
+        Cpu.Memory[pc++] = 0x4D; //
+        Cpu.Memory[pc++] = 0x46; //
+        Cpu.Memory[pc++] = 0x43; //
+        Cpu.Memory[pc++] = 0x6F; //
+        Cpu.Memory[pc++] = 0x6D; //
+        Cpu.Memory[pc++] = 0x70; //
+        Cpu.Memory[pc++] = 0x75; //
+        Cpu.Memory[pc++] = 0x74; //
+        Cpu.Memory[pc++] = 0x6E; //
+        Cpu.Memory[pc++] = 0x72; //
+        Cpu.Memory[pc++] = 0x21; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0x79; //011E TYPEMSG1: DB "You pressed '",0
+        Cpu.Memory[pc++] = 0x6F; //
+        Cpu.Memory[pc++] = 0x75; //
+        Cpu.Memory[pc++] = 0x20; //
+        Cpu.Memory[pc++] = 0x70; //
+        Cpu.Memory[pc++] = 0x72; //
+        Cpu.Memory[pc++] = 0x65; //
+        Cpu.Memory[pc++] = 0x73; //
+        Cpu.Memory[pc++] = 0x73; //
+        Cpu.Memory[pc++] = 0x65; //
+        Cpu.Memory[pc++] = 0x64; //
+        Cpu.Memory[pc++] = 0x20; //
+        Cpu.Memory[pc++] = 0x27; //
+        Cpu.Memory[pc++] = 0x00; //
+        Cpu.Memory[pc++] = 0x2E; //012C TYPEMSG2: DB "'.\r\n",0
+        Cpu.Memory[pc++] = 0x0D; //
+        Cpu.Memory[pc++] = 0x0A; //
+        Cpu.Memory[pc++] = 0x00; //
+        
+    }
+
     public void ControlBank_Changed(object sender, FrontPanelInputRowEventArgs e) {
         if (e.ButtonPresses.HasValue) {
             //Debug.WriteLine($"simple button press: {e.ButtonPresses.Value}");

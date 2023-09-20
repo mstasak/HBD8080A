@@ -8,7 +8,7 @@ using Windows.Media.Audio;
 
 namespace MFComputer.Services;
 
-public sealed class DumbTerminalService {
+public class DumbTerminalService {
 
     public string Eol {
         get; set;
@@ -16,9 +16,8 @@ public sealed class DumbTerminalService {
 
     private bool isOn = false;
     public bool IsOn {
-        get => isOn;
+        get => RunDispatcherQueue is not null && !QuitRequested && !shutdownDispatcherQueueRequested;
         set {
-            isOn = false;
             if (value) {
                 Start();
             } else {
@@ -32,6 +31,10 @@ public sealed class DumbTerminalService {
     public Queue<char> OutputQueue { get; } = new();
     private void Start() {
         if (!isOn) {
+            QuitRequested = false;
+            shutdownDispatcherQueueRequested = false;
+            InputQueue.Clear();
+            OutputQueue.Clear();
             isOn = true;
             RunTerminalTask();
         }
@@ -39,6 +42,9 @@ public sealed class DumbTerminalService {
 
     private void Stop() {
         if (isOn) {
+            QuitRequested = true;
+            InputQueue.Clear();
+            OutputQueue.Clear();
             shutdownDispatcherQueueRequested = true;
         }
     }
@@ -64,7 +70,7 @@ public sealed class DumbTerminalService {
     }
 
     private bool shutdownDispatcherQueueRequested = false;
-    private void RunTerminalTask() {
+    private async void RunTerminalTask() {
         if (RunDispatcherQueueController == null) {
             RunDispatcherQueueController = DispatcherQueueController.CreateOnDedicatedThread();
             RunDispatcherQueue = RunDispatcherQueueController.DispatcherQueue;
@@ -73,6 +79,9 @@ public sealed class DumbTerminalService {
             DispatcherQueuePriority.High,
             TerminalTask
         );
+        await RunDispatcherQueueController.ShutdownQueueAsync();
+        RunDispatcherQueue = null;
+        RunDispatcherQueueController = null;
     }
 
     private Process? pipeClient = null;
@@ -97,6 +106,9 @@ public sealed class DumbTerminalService {
             serverDisplay?.Start();
             Thread.Sleep(250);
             while (serverKB != null || serverDisplay != null) {
+                if (shutdownDispatcherQueueRequested) {
+                    QuitRequested = true;
+                }
                 if (serverKB?.Join(100) ?? false) {
                     //Console.WriteLine("Server thread[{0}] finished.", server!.ManagedThreadId);
                     serverKB = null;
@@ -107,15 +119,19 @@ public sealed class DumbTerminalService {
                     serverDisplay = null;
                     QuitRequested = true;
                 }
-                if (!QuitRequested && serverKB != null && serverDisplay != null) {
-                    var ch = ReadChar();
-                    if (ch is not null) {
-                        WriteChar(ch.Value);
-                        if (ch.Value == '\x1A') {
-                            QuitRequested = true;
-                        }
-                    }
-                }
+
+                //simple echo loop for debug - sends kb input to display
+                //note Enter (or Ctrl+M) is carriage return, Ctrl-Enter (or Ctrl+J) is linefeed
+                //Ctrl+Z is EoF, which will kill terminal from KB.  It can also be killed by "turning off" the terminal in GUI.
+                //if (!QuitRequested && serverKB != null && serverDisplay != null) {
+                //    var ch = ReadChar();
+                //    if (ch is not null) {
+                //        WriteChar(ch.Value);
+                //        if (ch.Value == '\x1A') {
+                //            QuitRequested = true;
+                //        }
+                //    }
+                //}
             }
 
         } catch (Exception e) {
@@ -135,6 +151,16 @@ public sealed class DumbTerminalService {
             OutputQueue.Enqueue(ch);
         }
     }
+    public void Write(string s) {
+        foreach (var c in s) {
+            WriteChar(c);
+        }
+    }
+
+    public void WriteLine(string s) {
+        WriteLine(s + Eol);
+    }
+
     public char? ReadChar() {
         if (!QuitRequested && serverKB != null && serverDisplay != null) {
             if (InputQueue.Count == 0) {
@@ -153,27 +179,7 @@ public sealed class DumbTerminalService {
         pipeServerKB.WaitForConnection();
         //Console.WriteLine("Client connected on thread[{0}].", threadId);
         try {
-            // Read the request from the client. Once the client has
-            // written to the pipe its security token will be available.
-            //var ssIn = new StreamString(pipeServerKB);
-            // Verify our identity to the connected client using a
-            // string that the client anticipates.
-            //ss.WriteString("I am the one true server!");
-            //string filename = ss.ReadString();
-
-            // Read in the contents of the file while impersonating the client.
-            //ReadFileToStream fileReader = new ReadFileToStream(ss, filename);
-
-            // Display the name of the user we are impersonating.
-            //Console.WriteLine("Reading file: {0} on thread[{1}] as user: {2}.",
-            //    filename, threadId, pipeServer.GetImpersonationUserName());
-            //pipeServerKB.RunAsClient(fileReader.Start);
-            while (!QuitRequested) {
-                //try to queue input from kb
-                //var s = ssIn.ReadString();
-                //foreach(var c in s) {
-                //    InputQueue.Enqueue(c);
-                //}
+            while (!QuitRequested && pipeServerKB.IsConnected && !shutdownDispatcherQueueRequested) {
                 var key = (char)pipeServerKB.ReadByte();
                 InputQueue.Enqueue(key);
                 if (key == '\x1A') {
@@ -181,8 +187,6 @@ public sealed class DumbTerminalService {
                 }
             }
         }
-        // Catch the IOException that is raised if the pipe is broken
-        // or disconnected.
         catch (IOException e) {
             Debug.WriteLine("ERROR: {0}", e.Message);
         } finally {
@@ -196,7 +200,7 @@ public sealed class DumbTerminalService {
         pipeServerDisplay.WaitForConnection();
         //Console.WriteLine("Client connected on thread[{0}].", threadId);
         try {
-            while (!QuitRequested && pipeServerDisplay.IsConnected) {
+            while (!QuitRequested && pipeServerDisplay.IsConnected && !shutdownDispatcherQueueRequested) {
                 //try to write output to display
                 if (OutputQueue.Count > 0) {
                     var ch = OutputQueue.Dequeue();

@@ -65,6 +65,9 @@ public partial class App : Application
             services.AddSingleton<IPageService, PageService>();
             services.AddSingleton<INavigationService, NavigationService>();
             services.AddSingleton(ComputerSystemService.Instance);
+            {
+                _ = DumbTerminalService.Instance;
+            }
             services.AddSingleton(DumbTerminalService.Instance);
             //services.AddSingleton(FrontPanelDataService.Instance);
 

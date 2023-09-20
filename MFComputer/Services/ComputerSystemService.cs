@@ -30,13 +30,19 @@ public sealed class ComputerSystemService {
     public static ComputerSystemService Instance => lazy.Value;
 
     private ComputerSystemService() {
-        Cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
+        //Cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
         DoRunRun();
     //    //Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
     }
 
+    private Cpu8080A cpu = null;
     public Cpu8080A Cpu {
-        get; set;
+        get {
+            if (cpu == null) {
+                cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
+            }
+            return cpu;
+        }
     }
 
     public void DoRunRun() { //yeah, the DoRunRun()
