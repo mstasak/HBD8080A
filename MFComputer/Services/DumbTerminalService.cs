@@ -27,8 +27,8 @@ public class DumbTerminalService {
     }
     public bool QuitRequested { get; set; } = false;
 
-    public Queue<char> InputQueue { get; } = new();
-    public Queue<char> OutputQueue { get; } = new();
+    public System.Collections.Concurrent.ConcurrentQueue<char> InputQueue { get; } = new();
+    public System.Collections.Concurrent.ConcurrentQueue<char> OutputQueue { get; } = new();
     private void Start() {
         if (!isOn) {
             QuitRequested = false;
@@ -163,13 +163,16 @@ public class DumbTerminalService {
 
     public char? ReadChar() {
         if (!QuitRequested && serverKB != null && serverDisplay != null) {
-            if (InputQueue.Count == 0) {
-                return null;
+            //if (InputQueue.Count == 0) {
+            //    return null;
+            //}
+            //return InputQueue.Dequeue();
+            char ch;
+            if (InputQueue.TryDequeue(out ch)) {
+                return ch;
             }
-            return InputQueue.Dequeue();
-        } else {
-            return null; 
         }
+        return null;
     }
 
     private void ServerThreadKB(object? data) {
@@ -202,13 +205,16 @@ public class DumbTerminalService {
         try {
             while (!QuitRequested && pipeServerDisplay.IsConnected && !shutdownDispatcherQueueRequested) {
                 //try to write output to display
-                if (OutputQueue.Count > 0) {
-                    var ch = OutputQueue.Dequeue();
-                    pipeServerDisplay.WriteByte((byte)ch);
-                    if (ch == '\x1A') {
-                        QuitRequested = true;
+                //if (OutputQueue.Count > 0) {
+                    //var ch = OutputQueue.Dequeue();
+                    char ch;
+                    if (OutputQueue.TryDequeue(out ch)) {
+                        pipeServerDisplay.WriteByte((byte)ch);
+                        if (ch == '\x1A') {
+                            QuitRequested = true;
+                        }
                     }
-                }
+                //}
             }
         }
         // Catch the IOException that is raised if the pipe is broken
