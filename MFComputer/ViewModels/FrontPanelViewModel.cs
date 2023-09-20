@@ -205,9 +205,9 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0x00; //
         Cpu.Memory[pc++] = 0xDB; //0009 IN 1
         Cpu.Memory[pc++] = 0x01; //
-        Cpu.Memory[pc++] = 0xA7; //000B ORA A
-        Cpu.Memory[pc++] = 0xCA; //000C JZ 0000BH
-        Cpu.Memory[pc++] = 0x0B; //
+        Cpu.Memory[pc++] = 0xA7; //000B ANA A
+        Cpu.Memory[pc++] = 0xCA; //000C JZ 00009H
+        Cpu.Memory[pc++] = 0x09; //
         Cpu.Memory[pc++] = 0x00; //
         Cpu.Memory[pc++] = 0x21; //000F LXI H,TYPEMSG1 ;"   You typed: '"
         Cpu.Memory[pc++] = 0x1E; //
@@ -226,20 +226,22 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xC3; //001D JMP 00009H
         Cpu.Memory[pc++] = 0x09; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc+=16]=0x00; //0020 DS 16
+        pc+=16;                  //0020 DS 16
+        Debug.Assert(pc == 0x0030);
         Cpu.Memory[pc++] = 0xF5; //0030 WRITESTR: PUSH PSW
         Cpu.Memory[pc++] = 0xE5; //0031 PUSH H
-        Cpu.Memory[pc++] = 0x7E; //0031 MOV A,M
-        Cpu.Memory[pc++] = 0xA7; //0033 ORA A
+        Cpu.Memory[pc++] = 0x7E; //0032 MOV A,M
+        Cpu.Memory[pc++] = 0xA7; //0033 ANA A
         Cpu.Memory[pc++] = 0xCA; //0034 JZ EXITWRITESTR
         Cpu.Memory[pc++] = 0x3D; //
         Cpu.Memory[pc++] = 0x00; //
         Cpu.Memory[pc++] = 0xD3; //0037 OUT 1
         Cpu.Memory[pc++] = 0x01; //
         Cpu.Memory[pc++] = 0x23; //0039 INX H
-        Cpu.Memory[pc++] = 0xC3; //003A JMP 0031
-        Cpu.Memory[pc++] = 0x31; //
+        Cpu.Memory[pc++] = 0xC3; //003A JMP 00032H
+        Cpu.Memory[pc++] = 0x32; //
         Cpu.Memory[pc++] = 0x00; //
+        Debug.Assert(pc == 0x003D);
         Cpu.Memory[pc++] = 0xE1; //003D EXITWRITESTR: POP H
         Cpu.Memory[pc++] = 0xF1; //003E POP PSW
         Cpu.Memory[pc++] = 0xC9; //003F RET
@@ -270,10 +272,11 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0x70; //
         Cpu.Memory[pc++] = 0x75; //
         Cpu.Memory[pc++] = 0x74; //
-        Cpu.Memory[pc++] = 0x6E; //
+        Cpu.Memory[pc++] = 0x65; //
         Cpu.Memory[pc++] = 0x72; //
         Cpu.Memory[pc++] = 0x21; //
         Cpu.Memory[pc++] = 0x00; //
+        Debug.Assert(pc == 0x011E);
         Cpu.Memory[pc++] = 0x79; //011E TYPEMSG1: DB "You pressed '",0
         Cpu.Memory[pc++] = 0x6F; //
         Cpu.Memory[pc++] = 0x75; //
@@ -288,7 +291,9 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0x20; //
         Cpu.Memory[pc++] = 0x27; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0x2E; //012C TYPEMSG2: DB "'.\r\n",0
+        Debug.Assert(pc == 0x012C);
+        Cpu.Memory[pc++] = 0x27; //012C TYPEMSG2: DB "'.\r\n",0
+        Cpu.Memory[pc++] = 0x2E; //
         Cpu.Memory[pc++] = 0x0D; //
         Cpu.Memory[pc++] = 0x0A; //
         Cpu.Memory[pc++] = 0x00; //
