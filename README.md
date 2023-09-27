@@ -27,7 +27,7 @@ Next goals (in no particular order, any or all may never be completed):
 - Code cleanup and refactoring
 - Tiny Basic (maybe Dr. Wang Palo Alto, maybe some other(s))
 - Full basic (if any major/good commercial BASIC interpreters have been made freeware)
-- C compiler? Pascal? Some other tiny language? Roll my own?
+- C compiler? Pascal? Some other tiny language? Roll my own? A micro-Python or micro-PHP would be cool.
 - program library, copyright-checked
 - smart terminal (i.e. ADM-3A, VT-52, or VT-100)
 - speed throttling via calculated run timeslice - sleep-timeslice cycle (i.e. to slow to stock 2MHz speed)
@@ -39,6 +39,7 @@ Next goals (in no particular order, any or all may never be completed):
 - look for resources - would like a debugger, and a good Windows-hosted cross-assembler with macros.
 - performance enhancement - implement per-accumulator-value lookup table for sign, zero, parity flags to reduce flag overhead.
 - debugging enhancements: registers view, memory view, disassembly around PC, run-to-here capability (or real breakpoints would be better).
+- fix up SCS to accept mixed case text, implement resequence and autonumber editing aids and a simple help screen.
 
 ![image](https://github.com/mstasak/MFComputer/assets/39843617/fe0ce289-b7da-4ed7-814a-4bbbf9c7bebb)
 
