@@ -22,7 +22,8 @@ about 40-50 8080A MHz equivalent under debug build, or 625-650 MHz equivalent un
 Loaded and ran IMSAI SCS (self contained system) and used it to create, edit, assemble, and run a simple program.
 
 Next goals (in no particular order, any or all may never be completed):
-- Graphics output device
+- Begin assigning a version number and maintaining a release history
+- Implement a graphics output device (monochrome? CGA-like? Dazzler? SVGA?)
 - UI refinements
 - Code cleanup and refactoring
 - Tiny Basic (maybe Dr. Wang Palo Alto, maybe some other(s))
@@ -40,6 +41,7 @@ Next goals (in no particular order, any or all may never be completed):
 - performance enhancement - implement per-accumulator-value lookup table for sign, zero, parity flags to reduce flag overhead.
 - debugging enhancements: registers view, memory view, disassembly around PC, run-to-here capability (or real breakpoints would be better).
 - fix up SCS to accept mixed case text, implement resequence and autonumber editing aids and a simple help screen.
+- CPM/80
 
 ![image](https://github.com/mstasak/MFComputer/assets/39843617/fe0ce289-b7da-4ed7-814a-4bbbf9c7bebb)
 
