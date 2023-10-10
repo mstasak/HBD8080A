@@ -35,12 +35,10 @@ public sealed class ComputerSystemService {
     //    //Debug.WriteLine($"ComputerSystemService on thread \"{Thread.CurrentThread.Name}\", #{Thread.CurrentThread.ManagedThreadId}");
     }
 
-    private Cpu8080A cpu = null;
+    private Cpu8080A? cpu = null;
     public Cpu8080A Cpu {
         get {
-            if (cpu == null) {
-                cpu = new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
-            }
+            cpu ??= new Cpu8080A(AppUIDispatcherQueue: AppUIDispatcherQueue);
             return cpu;
         }
     }

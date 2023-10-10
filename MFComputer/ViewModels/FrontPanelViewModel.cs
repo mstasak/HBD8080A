@@ -203,8 +203,8 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xCD; //0006 CALL WRITESTR
         Cpu.Memory[pc++] = 0x30; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0xDB; //0009 IN 1
-        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xDB; //0009 IN TTY_DATA_INPUT_PORT
+        Cpu.Memory[pc++] = Cpu8080A.TTY_DATA_INPUT_PORT; //
         Cpu.Memory[pc++] = 0xA7; //000B ANA A
         Cpu.Memory[pc++] = 0xCA; //000C JZ 00009H
         Cpu.Memory[pc++] = 0x09; //
@@ -215,8 +215,8 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xCD; //0012 CALL WRITESTR
         Cpu.Memory[pc++] = 0x30; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0xD3; //0015 OUT 1
-        Cpu.Memory[pc++] = 0x01; //
+        Cpu.Memory[pc++] = 0xD3; //0015 OUT TTY_DATA_OUTPUT_PORT
+        Cpu.Memory[pc++] = Cpu8080A.TTY_DATA_OUTPUT_PORT; //
         Cpu.Memory[pc++] = 0x21; //0017 LXI H,TYPEMSG2 ;"'\r\n"
         Cpu.Memory[pc++] = 0x2C; //
         Cpu.Memory[pc++] = 0x01; //
@@ -229,24 +229,24 @@ public class FrontPanelViewModel : ObservableRecipient {
         pc+=16;                  //0020 DS 16
         Debug.Assert(pc == 0x0030);
         Cpu.Memory[pc++] = 0xF5; //0030 WRITESTR: PUSH PSW
-        Cpu.Memory[pc++] = 0xE5; //0031 PUSH H
-        Cpu.Memory[pc++] = 0x7E; //0032 MOV A,M
-        Cpu.Memory[pc++] = 0xA7; //0033 ANA A
-        Cpu.Memory[pc++] = 0xCA; //0034 JZ EXITWRITESTR
+        Cpu.Memory[pc++] = 0xE5; //0031           PUSH H
+        Cpu.Memory[pc++] = 0x7E; //0032           MOV A,M
+        Cpu.Memory[pc++] = 0xA7; //0033           ANA A
+        Cpu.Memory[pc++] = 0xCA; //0034           JZ EXITWRITESTR
         Cpu.Memory[pc++] = 0x3D; //
         Cpu.Memory[pc++] = 0x00; //
-        Cpu.Memory[pc++] = 0xD3; //0037 OUT 1
-        Cpu.Memory[pc++] = 0x01; //
-        Cpu.Memory[pc++] = 0x23; //0039 INX H
-        Cpu.Memory[pc++] = 0xC3; //003A JMP 00032H
+        Cpu.Memory[pc++] = 0xD3; //0037           OUT 1
+        Cpu.Memory[pc++] = Cpu8080A.TTY_DATA_OUTPUT_PORT; //
+        Cpu.Memory[pc++] = 0x23; //0039           INX H
+        Cpu.Memory[pc++] = 0xC3; //003A           JMP 00032H
         Cpu.Memory[pc++] = 0x32; //
         Cpu.Memory[pc++] = 0x00; //
         Debug.Assert(pc == 0x003D);
         Cpu.Memory[pc++] = 0xE1; //003D EXITWRITESTR: POP H
-        Cpu.Memory[pc++] = 0xF1; //003E POP PSW
-        Cpu.Memory[pc++] = 0xC9; //003F RET
+        Cpu.Memory[pc++] = 0xF1; //003E           POP PSW
+        Cpu.Memory[pc++] = 0xC9; //003F           RET
         pc=0X100;                //ORG 100H
-        Cpu.Memory[pc++] = 0x48; //0100 HELLOMSG: DB "Hello World, from MFComputer!",0
+        Cpu.Memory[pc++] = 0x48; //0100 HELLOMSG: DB "Hello World, from MFComputer!\0"
         Cpu.Memory[pc++] = 0x65; //
         Cpu.Memory[pc++] = 0x6C; //
         Cpu.Memory[pc++] = 0x6C; //
@@ -388,7 +388,7 @@ public class FrontPanelViewModel : ObservableRecipient {
         var flags = Cpu.Flags;
         var intEnb = Cpu.IsInterruptsEnabled;
         //var isFast = RepeatingTimer.Interval < TimeSpan.FromMicroseconds(1000 * 100);
-        MemoryDataLEDs = Cpu.Memory[pc];
+        MemoryDataLEDs = (Cpu.CurrentState == Cpu8080A.CpuState.Off) ? (byte)0x00 : Cpu.Memory[pc];
         AddressHighLEDs = (byte)(pc >> 8);
         AddressLowLEDs = (byte)(pc & 0xff);
         OutputLEDs = Cpu.LatchedOutputValues[0xff];
@@ -430,4 +430,20 @@ public class FrontPanelViewModel : ObservableRecipient {
     private static long cyclesStart = 0;
     private static DateTime tsStart = DateTime.Now;
     private string frequencyEstimate = "initvalue";
+
+
+    public void SCS_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+        //load file from static location
+        var memory = File.ReadAllBytes("f:\\dev\\asm80\\scs\\scs.bin");
+        for (var i=0; i<memory.Count(); i++) {
+            Cpu.Memory[i] = memory[i];
+        }
+    }
+    public void PATB_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+        //load file from static location
+        var memory = File.ReadAllBytes("f:\\dev\\8080\\TinyB\\PaloAlto\\patb.bin");
+        for (var i=0; i<memory.Count(); i++) {
+            Cpu.Memory[i] = memory[i];
+        }
+    }
 }

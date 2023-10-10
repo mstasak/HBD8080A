@@ -8,11 +8,17 @@ using Newtonsoft.Json.Linq;
 namespace MFComputer.Hardware.Computer;
 public class Cpu8080A {
 
+    public static readonly byte TTY_STATUS_PORT = 0x03;
+    public static readonly byte TTY_DATA_INPUT_PORT = 0x02;
+    public static readonly byte TTY_DATA_OUTPUT_PORT = 0x02;
+    public static readonly byte TTY_STATUS_OUTPUT_READY_MASK = 0x01;
+    public static readonly byte TTY_STATUS_INPUT_READY_MASK = 0x02;
+
     public DispatcherQueue? AppUIDispatcherQueue {
         get;
     }
 
-    private DumbTerminalService terminal = null;
+    private DumbTerminalService? terminal = null;
     public DumbTerminalService Terminal {
         get {
             if (terminal == null) {
@@ -1990,7 +1996,7 @@ public class Cpu8080A {
 
     public delegate byte InputAction(byte port);
     public InputAction? Inputter;
-    public static byte InPortFF;
+    public static byte InPortFF { get; set; }
 
     //public delegate void InputReceiver(byte port, bool handled, byte value);
     //private bool inputHandled;
@@ -2013,7 +2019,7 @@ public class Cpu8080A {
     private void PortOutput(byte port, byte value) {
         //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
         //This would optimize output on a system with numerous ports used.
-        if (port == 0x01) { //write to dumbtty display
+        if (port == TTY_DATA_OUTPUT_PORT) { //write to dumbtty display
             Terminal.WriteChar((char)value);
             return;
         }
@@ -2062,12 +2068,12 @@ public class Cpu8080A {
     /// <param name="port">Port specified by "IN" instruction.</param>
     /// <returns>Data from input source, to be stored into accumulator.</returns>
     private byte PortInput(byte port) {
-        //TODO: MAYBE keep an array or dictionary of outputdelegates keyed by port#?
+        //TODO: MAYBE keep an array or dictionary of delegates keyed by port#?
         //This would optimize input on a system with numerous ports used (may be unlikely).
         if (port == 0xff) { //sense switches
             return Cpu8080A.InPortFF;
         }
-        if (port == 0x01) { //DumbTTY keyboard input
+        if (port == TTY_DATA_INPUT_PORT) { //dumbterminal keyboard input
             var ch = Terminal.ReadChar();
             if (ch != null) {
                 return (byte)ch;
@@ -2075,17 +2081,27 @@ public class Cpu8080A {
                 return 0; //maybe should change type to int and return -1 when "not ready"?
             }
         }
-        byte inputValue = 0xff;
-        if (Inputter is not null) {
-            if (AppUIDispatcherQueue is not null) {
-                foreach (var Delegate in Inputter.GetInvocationList()) {
-                    //inputValue = await AppUIDispatcherQueue.EnqueueAsync(
-                    //    (Delegate as InputAction),
-                    //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal
-                    //);
+        if (port == TTY_STATUS_PORT) { //dumbterminal status port
+            byte ttyStatus = 0x00;
+            if (Terminal.IsOn) {
+                ttyStatus |= TTY_STATUS_OUTPUT_READY_MASK; // display is ready for output
+                if (Terminal.KBHit()) {
+                    ttyStatus |= TTY_STATUS_INPUT_READY_MASK;  // a keystroke is waiting
                 }
             }
+            return ttyStatus;
         }
+        byte inputValue = 0xff;
+        //if (Inputter is not null) {
+        //    if (AppUIDispatcherQueue is not null) {
+        //        foreach (var Delegate in Inputter.GetInvocationList()) {
+        //            //inputValue = await AppUIDispatcherQueue.EnqueueAsync(
+        //            //    (Delegate as InputAction),
+        //            //    Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal
+        //            //);
+        //        }
+        //    }
+        //}
         return inputValue;
     }
 

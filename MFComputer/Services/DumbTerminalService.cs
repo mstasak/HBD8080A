@@ -146,6 +146,14 @@ public class DumbTerminalService {
         }
     }
 
+    public bool KBHit() {
+        if (!QuitRequested && serverKB != null && serverDisplay != null) {
+            return !InputQueue.IsEmpty;
+        } else {
+            return false;
+        }
+    }
+
     public void WriteChar(char ch) {
         if (!QuitRequested && serverKB != null && serverDisplay != null) {
             OutputQueue.Enqueue(ch);
