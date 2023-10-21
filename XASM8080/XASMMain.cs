@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.VisualBasic;
 
+namespace XASM8080;
+
 public class XASMMain {
 
     static bool UsageNeeded;
@@ -32,8 +34,8 @@ public class XASMMain {
     }
 
     private static void AssembleFiles() {
-        using (var asm = new Assembler());
-        asm.Run();
+        var asm = new Assembler(inputFileNames);
+        asm.Assemble();
     }
 
     private static void ParseArgs(string[] args) {

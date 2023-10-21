@@ -21,9 +21,7 @@ public class Cpu8080A {
     private DumbTerminalService? terminal = null;
     public DumbTerminalService Terminal {
         get {
-            if (terminal == null) {
-                terminal = App.GetService<DumbTerminalService>();
-            }
+            terminal ??= App.GetService<DumbTerminalService>();
             return terminal;
         }
     }

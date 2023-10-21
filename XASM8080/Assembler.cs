@@ -1,234 +1,257 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace XASM8080;
 
-internal enum OperandModel {
-    None,
-    OneR8,
-    TwoR8,
-    OneR16,
-    OneR16BD, //BC or DE only
-    Imm8,
-    Imm16,
-    R8Imm8,
-    R16Imm16,
-    RstNum,
-    DBList,
-    DWList
-}
+/**
+ * Multi-pass assembler, using "standard"-ish Microsoft/Intel syntax.
+ * Not to pleased with the first cut, may scrap most and do over.
+ * The details of a simple process do add up.  Too big for a reasonable
+ * single-file program, should probably make distinct classes for 
+ * instruction set, output generator(s), expression evaluation, symbol table.
+**/
 
-internal struct InstructionDef {
-    public string mnemonic;
-    public byte opcode;
-    public OperandModel operands;
-}
+
+
+//internal struct  AssemblyCodeLine {
+//    internal string rawLine;
+//    internal string? Label;
+//    internal string? Mnemonic;
+//    internal List<Operand>? OperandList;
+//    internal string? Comment;
+//}
+
 
 internal class Assembler {
-    private static readonly char[] WhitespaceChars = new char[] { ' ', '\t' };
-    private int pass;
+
+    public static readonly char[] WhitespaceChars = new char[] { ' ', '\t' };
+    public SymbolTable SymbolTable;
+    public CodeGenerator CodeGenerator;
+    public List<string> InputFilePaths;
+
+    private int Pass;
+    private int PriorPassUnresolvedSymbolRefs;
+    //private bool finalPass = false;
+    //private int passErrorCount = 0;
+    //private int passUnresolvedSymbols = 0; //symbol value is uncertain; must reach 0 for successful compile
+    //private int passUndefinedSymbols = 0; //symbol not known; ok on pass 1 for forward reference
+
+    ////private int? minAddressWritten;
+    ////private int? maxAddressWritten;
+    ////private byte[] outputBuffer = new byte[65536];
+
     private string? currentFileName;
-    private int currentLineNumber;
-    private int? priorPassUnresolvedSymbols;
-    private int? priorPassTotalSymbols;
-    private int passUnresolvedSymbols;
-    private int? minAddressWritten;
-    private int? maxAddressWritten;
-    private byte[] outputBuffer = new byte[65536];
+    private int currentLineNumber; //within file
+    ////private string currentLinePart; // label, opcode, operand n, comment
+    ////private string? currentLineLabel;
+    ////private ushort? currentLineLabelValue;
+    ////private string? currentLineInstruction;
+    ////private byte? currentLineData;
+    ////private string? currentLineOperandText;
+    ////private List<byte>? currentLineOperandData;
+    ////private string? currentLineComment;
+    ////private string? currentLineError;
+    //private SourceCodeLine? currentLine;
+    ////private int? priorPassTotalSymbols;
+    //private int passUnresolvedSymbolRefs;
 
-    private ushort address;
-    public Dictionary<string, ushort?> Symbols {
-        get; set;
-    }
-    public List<string> InputFileNames {
-        get; set;
+    //public Dictionary<string, ushort?> Symbols {
+    //    get; set;
+    //}
+
+    internal Assembler(IEnumerable<string> filePaths) {
+        SymbolTable = new();
+        CodeGenerator = new();
+        InputFilePaths = new(filePaths);
     }
 
-    public Assembler(IEnumerable<string> fNames) {
-        Symbols = new();
-        InputFileNames = new(fNames);
-    }
-
-    public void Assemble() {
-        pass = 0;
-        priorPassUnresolvedSymbols = null;
-        priorPassTotalSymbols = null;
-        passUnresolvedSymbols = 0;
-        address = 0;
-        bool progressMade;
+    internal void Assemble() {
+        Pass = 1;
+        PriorPassUnresolvedSymbolRefs = 0;
+        bool needAnotherPass;
+        //bool readyForFinalPass = false; //will be set when no issues remain, or last pass made no progress
         do {
-            pass++;
+            CodeGenerator.Reset(Pass: Pass, Address: 0, FinalPass: false);
             AssemblePass();
-            passUnresolvedSymbols = Symbols.Count((kvPair) => !kvPair.Value.HasValue);
-            progressMade = (passUnresolvedSymbols > 0) && ((passUnresolvedSymbols < priorPassUnresolvedSymbols) || (Symbols.Count > priorPassTotalSymbols));
-            priorPassTotalSymbols = Symbols.Count;
-            priorPassUnresolvedSymbols = passUnresolvedSymbols;
-        } while (progressMade);
+            var passUnresolvedSymbolRefs = SymbolTable.UnresolvedSymbolRefCount();
+            //int passUnknownSymbolCount = SymbolTable.UnknownSymbolCount();
+            needAnotherPass = (passUnresolvedSymbolRefs > 0) && (passUnresolvedSymbolRefs < PriorPassUnresolvedSymbolRefs);
+            PriorPassUnresolvedSymbolRefs = passUnresolvedSymbolRefs;
+            Pass++;
+        } while (needAnotherPass);
+        if (PriorPassUnresolvedSymbolRefs > 0) {
+            Pass--;
+            DisplayMessage($"Assembly aborted after {Pass} passes.  There are {PriorPassUnresolvedSymbolRefs} unresolvable symbols.");
+        } else {
+            //begin final pass
+            CodeGenerator.Reset(Pass: Pass, Address: 0, FinalPass: true);
+            AssemblePass();
+            DisplayMessage($"Assembly completed in {Pass} passes.");
+            //CodeGenerator.DisplayOutputStatistics();
+        }
+    }
 
+    private void DisplayMessage(string v) {
+        Console.WriteLine(v);
     }
 
     private void AssemblePass() {
         //throw new NotImplementedException();
-        address = 0;
-        foreach (var fileName in InputFileNames) {
+        //passErrorCount = 0;
+        foreach (var fileName in InputFilePaths) {
             currentFileName = fileName;
             currentLineNumber = 1;
             using var inFile = File.OpenText(fileName);
             if (inFile != null) {
-                var s = inFile.ReadLine();
+                var s = GetLineWithContinuations(inFile);
                 while (s != null) {
                     AssembleLine(s);
-                    s = inFile.ReadLine();
+                    s = GetLineWithContinuations(inFile);
                 }
             }
         }
     }
 
+    private string? GetLineWithContinuations(StreamReader inFile) {
+        var s = inFile.ReadLine();
+        if (s != null) {
+            while (s.EndsWith("\\") && !inFile.EndOfStream) {
+                s = string.Concat(s.AsSpan(0, s.Length - 1), inFile.ReadLine());
+            }
+        }
+        return s;
+    }
+
     private void AssembleLine(string s) {
-        string? label;
-        string? opcode;
-        List<string> operands = new();
-        string? comment;
-        label = parseLabel(ref s);
-        opcode = parseOpcode(ref s);
-        parseOperands(ref s);
-        comment = parseComment(s);
-        emitCodeLine();
-        emitListingLine();
-        if (label != null) {
-            emitSymbolTableLine();
-        }
+        //string? Label;
+        //string? Opcode;
+        //List<Operand> Operands = new();
+        //string? Comment;
+
+        ////parse line parts: [label;] [opcode [operand [,operand...]]] [;comment]
+        
+        ////label
+        //var match = Regex.Match(s, "^([0-9A-Z_a-z]*\\:)\\s",RegexOptions.IgnoreCase);
+        //if (match.Success) {
+        //    Label = match.Groups[1].Value;
+        //    s = s.Substring(match.Length);
+        //}
+        //s = s.TrimStart();
+
+        ////opcode
+        //var opcodeEnd = s.IndexOfAny(WhitespaceChars);
+        //if (opcodeEnd == -1) {
+        //    Opcode = s;
+        //} else {
+        //    Opcode = s.Substring(0, opcodeEnd);
+        //    s = s.Substring(opcodeEnd + 1);
+        //}
+        //if (s.Length == 0) {
+        //    Opcode = null;
+        //}
+
+        ////operand(s)
+        //s = s.TrimStart();
+        //if (Opcode != null) {
+        //    while (s.Length > 0 && !s.StartsWith(';')) {
+        //        var operand = ParseOperand(ref s);
+        //        if (operand == null) {
+        //            //error?
+        //            DisplayMessage($"Syntax error? Expected: Operand value, comment, or line end.");
+        //            break;
+        //        }
+        //    }
+        //}
+
+        ////comment
+        //s = s.TrimStart();
+        //if (s.StartsWith(';')) { 
+        //    Comment = s.Substring(1);
+        //    s = "";
+        //}
+        ////currentLineLabel = null;
+        ////currentLineLabelValue = null;
+        ////currentLineOpcodeText = null;
+        ////currentLineOpcodeData = null;
+        ////currentLineOperandText = null;
+        ////currentLineOperandData = null;
+        ////currentLineComment = null;
+        ////currentLineError = null;
+
+        ////parseLabel(ref s);
+        ////parseOpcode(ref s);
+        ////parseOperands(ref s);
+        ////parseComment(s);
+        ////emitCodeLine();
+        ////emitListingLine();
+        ////emitErrorLine();
+        ////if (currentLineLabel != null) {
+        ////    emitSymbolTableLine();
+        ////}
     }
 
-    private string? parseLabel(ref string s) {
-        if (s.StartsWith(';')) {
-            return null;
-        }
-        if (s.StartsWith(' ') || s.StartsWith('\t')) {
-            s = s.TrimStart();
-            return null;
-        }
-        var labelLength = s.IndexOfAny(WhitespaceChars);
-        var label = s.Substring(0, labelLength);
-        s = s.Substring(labelLength).TrimStart();
-        return label;
-    }
+    //private void parseLabel(ref string s) {
+    //    if (s.StartsWith(';')) {
+    //        return;
+    //    }
+    //    if (s.StartsWith(' ') || s.StartsWith('\t')) {
+    //        s = s.TrimStart();
+    //        return;
+    //    }
+    //    var labelLength = s.IndexOfAny(WhitespaceChars);
+    //    var label = s.Substring(0, labelLength).TrimStart().TrimEnd(':');
+    //    currentLineLabel = label;
+    //    s = s.Substring(labelLength).TrimStart();
+    //    return;
+    //}
 
-    private string? parseOpcode(ref string s) {
-        //throw new NotImplementedException();
-        if (s.StartsWith(';')) {
-            return null;
-        }
-        return "TBD()";
-    }
+    //private void parseOpcode(ref string s) {
+    //    //throw new NotImplementedException();
+    //    if (s.StartsWith(';')) {
+    //        return;
+    //    }
 
-    private void parseOperands(ref string s) => throw new NotImplementedException();
+    //    var endOpcd = s.IndexOfAny(WhitespaceChars);
+    //    if (endOpcd == -1) {
+    //        currentLineOpcodeText = s;
+    //        s = "";
+    //    } else {
+    //        currentLineOpcodeText = s.Substring(0, endOpcd);
+    //        s = s.Substring(endOpcd).TrimStart();
+    //    }
+    //    var NotFound = new InstructionDef();
+    //    var instr = InstructionSet8080.FirstOrDefault(i => i.mnemonic == currentLineOpcodeText, NotFound);
+    //    if (instr.mnemonic != "") {
+    //        currentLineOpcodeData = instr.opcode;
+    //    } else {
+    //        composeError($"unknown opcode '{currentLineOpcodeText}'");
+    //    }
+    //    return;
+    //}
 
-    private string? parseComment(string s) => throw new NotImplementedException();
+    //private void composeError(string err) {
+    //    var formattedError = $"Error in file {currentFileName}, line {currentLineNumber}: {err}.";
+    //    currentLineError = formattedError;
+    //}
 
-    private void emitCode() => throw new NotImplementedException();
+    //private void parseOperands(ref string s) {
 
-    private void emitSymbolTableLine() => throw new NotImplementedException();
+    //}
 
-    private void emitListingLine() => throw new NotImplementedException();
+    //private string? parseComment(string s) => throw new NotImplementedException();
 
-    private void emitCodeLine() => throw new NotImplementedException();
+    //private void emitSymbolTableLine() => throw new NotImplementedException();
 
-    private readonly InstructionDef[] InstructionSet = {
-        new InstructionDef {mnemonic = "NOP", opcode = 0x00, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "LXI", opcode = 0x01, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "STAX", opcode = 0x02, operands = OperandModel.OneR16BD},
-        new InstructionDef {mnemonic = "INX", opcode = 0x03, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "INR", opcode = 0x04, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "DCR", opcode = 0x05, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "MVI", opcode = 0x06, operands = OperandModel.R8Imm8},
-        new InstructionDef {mnemonic = "RLC", opcode = 0x07, operands = OperandModel.None},
-        // unused opcode 0x08
-        new InstructionDef {mnemonic = "DAD", opcode = 0x09, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "LDAX", opcode = 0x0A, operands = OperandModel.OneR16BD},
-        new InstructionDef {mnemonic = "DCX", opcode = 0x0B, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "RRC", opcode = 0x0F, operands = OperandModel.None},
-        // unused opcode 0x10
-        new InstructionDef {mnemonic = "RAL", opcode = 0x17, operands = OperandModel.None},
-        // unused opcode 0x18
-        new InstructionDef {mnemonic = "RAR", opcode = 0x1F, operands = OperandModel.None},
-        // unused opcode 0x20
-        new InstructionDef {mnemonic = "SHLD", opcode = 0x22, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "DAA", opcode = 0x27, operands = OperandModel.None},
-        // unused opcode 0x28
-        new InstructionDef {mnemonic = "LHLD", opcode = 0x2A, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "CMA", opcode = 0x2F, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "STA", opcode = 0x32, operands = OperandModel.Imm16},
-        // unused opcode 0x30
-        new InstructionDef {mnemonic = "STC", opcode = 0x37, operands = OperandModel.None},
-        // unused opcode 0x38
-        new InstructionDef {mnemonic = "LDA", opcode = 0x3A, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "CMC", opcode = 0x3F, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "MOV", opcode = 0x40, operands = OperandModel.TwoR8},
-        new InstructionDef {mnemonic = "HLT", opcode = 0x76, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "ADD", opcode = 0x80, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "ADC", opcode = 0x88, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "SUB", opcode = 0x90, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "SBB", opcode = 0x98, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "ANA", opcode = 0xA0, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "XRA", opcode = 0xA8, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "ORA", opcode = 0xB0, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "CMP", opcode = 0xB8, operands = OperandModel.OneR8},
-        new InstructionDef {mnemonic = "RNZ", opcode = 0xC0, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "POP", opcode = 0xC1, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "JNZ", opcode = 0xC2, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "JMP", opcode = 0xC3, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "CNZ", opcode = 0xC4, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "PUSH", opcode = 0xC5, operands = OperandModel.OneR16},
-        new InstructionDef {mnemonic = "ADI", opcode = 0xC6, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RST", opcode = 0xC7, operands = OperandModel.RstNum},
-        new InstructionDef {mnemonic = "RZ", opcode = 0xC8, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "RET", opcode = 0xC9, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JZ", opcode = 0xCA, operands = OperandModel.Imm16},
-        // unused opcode 0xCB
-        new InstructionDef {mnemonic = "CZ", opcode = 0xCC, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "CALL", opcode = 0xCD, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "ACI", opcode = 0xCE, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RNC", opcode = 0xD0, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JNC", opcode = 0xD2, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "OUT", opcode = 0xD3, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "CNC", opcode = 0xD4, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "SUI", opcode = 0xD6, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RC", opcode = 0xD8, operands = OperandModel.None},
-        // unused opcode 0xD9
-        new InstructionDef {mnemonic = "JC", opcode = 0xDA, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "IN", opcode = 0xDB, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "CC", opcode = 0xDC, operands = OperandModel.Imm16},
-        // unused opcode 0xDD
-        new InstructionDef {mnemonic = "SBI", opcode = 0xDE, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RPO", opcode = 0xE0, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JPO", opcode = 0xE2, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "XTHL", opcode = 0xE3, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "CPO", opcode = 0xE4, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "ANI", opcode = 0xE6, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RPE", opcode = 0xE8, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "PCHL", opcode = 0xE9, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JPE", opcode = 0xEA, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "XCHG", opcode = 0xEB, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "CPE", opcode = 0xEC, operands = OperandModel.Imm16},
-        // unused opcode 0xED
-        new InstructionDef {mnemonic = "XRI", opcode = 0xEE, operands = OperandModel.Imm8},
+    //private void emitListingLine() => throw new NotImplementedException();
 
-        new InstructionDef {mnemonic = "RPO", opcode = 0xF0, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JPO", opcode = 0xF2, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "DI", opcode = 0xF3, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "CP", opcode = 0xF4, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "ORI", opcode = 0xF6, operands = OperandModel.Imm8},
-        new InstructionDef {mnemonic = "RM", opcode = 0xF8, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "SPHL", opcode = 0xF9, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "JM", opcode = 0xFA, operands = OperandModel.Imm16},
-        new InstructionDef {mnemonic = "EI", opcode = 0xFB, operands = OperandModel.None},
-        new InstructionDef {mnemonic = "CM", opcode = 0xFC, operands = OperandModel.Imm16},
-        // unused opcode 0xFD
-        new InstructionDef {mnemonic = "CFI", opcode = 0xFE, operands = OperandModel.Imm8},
-    };
+    //private void emitCodeLine() => throw new NotImplementedException();
+
+    //private void emitErrorLine() => throw new NotImplementedException();
+
 }
