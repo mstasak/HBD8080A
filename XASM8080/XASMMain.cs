@@ -14,7 +14,7 @@ public class XASMMain {
     static bool GenerateCode = true;
     static bool GenerateListing = true;
     static int ErrorLimit = 10;
-    static readonly List<String> inputFileNames = new();
+    public static readonly List<string> InputFileNames = new();
     static int Main(string[] args) {
 
         ParseArgs(args);
@@ -34,8 +34,9 @@ public class XASMMain {
     }
 
     private static void AssembleFiles() {
-        var asm = new Assembler(inputFileNames);
-        asm.Assemble();
+        //Assembler.CmdLineArgs = InputFileNames;
+        //var asm = new Assembler(inputFileNames);
+        Assembler.Instance.Assemble();
     }
 
     private static void ParseArgs(string[] args) {
@@ -70,7 +71,7 @@ public class XASMMain {
                 } else {
                     //checked everything else; treat as a filename
                     //TODO: verify file exists and can be read; error out if not.
-                    inputFileNames.Add(arg);
+                    InputFileNames.Add(arg);
                 }
             }
         }

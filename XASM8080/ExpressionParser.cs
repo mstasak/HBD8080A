@@ -275,6 +275,16 @@ internal class ExpressionParser {
         RemainingInputLine = SourceString
         //IsError = false,
         //ErrorMessage = string.Empty
+
+
+        /** ABORT
+         * TOO CRAPPY, CAN'T CONTINUE
+         * REDOING PARSING IN SourceCodeLine CLASS.
+         * sometimes it takes a fresh pass, maybe even several, to code something well :)
+         */
+
+
+
     };
 
     ExpressionResult term1 = parseNumericExpression(SourceString: result.InputLine, PrecedenceLevel: PrecedenceLevel + 1);

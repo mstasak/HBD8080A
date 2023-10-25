@@ -8,17 +8,17 @@ namespace XASM8080;
 internal static class InstructionSet8080 {
     private static readonly InstructionDefinition[] instructionSet = {
         new InstructionDefinition {Mnemonic = "NOP", Opcode = 0x00, OperandModel = OperandModel.None, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "LXI", Opcode = 0x01, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "STAX", Opcode = 0x02, OperandModel = OperandModel.OneR16BD, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "INX", Opcode = 0x03, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "LXI", Opcode = 0x01, OperandModel = OperandModel.R16WithSP, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "STAX", Opcode = 0x02, OperandModel = OperandModel.R16OnlyBD, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "INX", Opcode = 0x03, OperandModel = OperandModel.R16WithSP, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "INR", Opcode = 0x04, OperandModel = OperandModel.R8Left, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "DCR", Opcode = 0x05, OperandModel = OperandModel.R8Left, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "MVI", Opcode = 0x06, OperandModel = OperandModel.R8Imm8, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "RLC", Opcode = 0x07, OperandModel = OperandModel.None, IsPseudoOp = false},
         // unused Opcode 0x08
-        new InstructionDefinition {Mnemonic = "DAD", Opcode = 0x09, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "LDAX", Opcode = 0x0A, OperandModel = OperandModel.OneR16BD, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "DCX", Opcode = 0x0B, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "DAD", Opcode = 0x09, OperandModel = OperandModel.R16WithSP, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "LDAX", Opcode = 0x0A, OperandModel = OperandModel.R16OnlyBD, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "DCX", Opcode = 0x0B, OperandModel = OperandModel.R16WithSP, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "RRC", Opcode = 0x0F, OperandModel = OperandModel.None, IsPseudoOp = false},
         // unused Opcode 0x10
         new InstructionDefinition {Mnemonic = "RAL", Opcode = 0x17, OperandModel = OperandModel.None, IsPseudoOp = false},
@@ -47,11 +47,11 @@ internal static class InstructionSet8080 {
         new InstructionDefinition {Mnemonic = "ORA", Opcode = 0xB0, OperandModel = OperandModel.R8Left, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "CMP", Opcode = 0xB8, OperandModel = OperandModel.R8Left, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "RNZ", Opcode = 0xC0, OperandModel = OperandModel.None, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "POP", Opcode = 0xC1, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "POP", Opcode = 0xC1, OperandModel = OperandModel.R16WithPSW, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "JNZ", Opcode = 0xC2, OperandModel = OperandModel.Imm16, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "JMP", Opcode = 0xC3, OperandModel = OperandModel.Imm16, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "CNZ", Opcode = 0xC4, OperandModel = OperandModel.Imm16, IsPseudoOp = false},
-        new InstructionDefinition {Mnemonic = "PUSH", Opcode = 0xC5, OperandModel = OperandModel.OneR16, IsPseudoOp = false},
+        new InstructionDefinition {Mnemonic = "PUSH", Opcode = 0xC5, OperandModel = OperandModel.R16WithPSW, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "ADI", Opcode = 0xC6, OperandModel = OperandModel.Imm8, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "RST", Opcode = 0xC7, OperandModel = OperandModel.RstNum, IsPseudoOp = false},
         new InstructionDefinition {Mnemonic = "RZ", Opcode = 0xC8, OperandModel = OperandModel.None, IsPseudoOp = false},
@@ -105,6 +105,8 @@ internal static class InstructionSet8080 {
         new InstructionDefinition {Mnemonic = "DW", Opcode = null, OperandModel = OperandModel.DWList, IsPseudoOp = true},
         new InstructionDefinition {Mnemonic = "DS", Opcode = null, OperandModel = OperandModel.DSSize, IsPseudoOp = true},
         new InstructionDefinition {Mnemonic = "END", Opcode = null, OperandModel = OperandModel.None, IsPseudoOp = true},
+        new InstructionDefinition {Mnemonic = "BLOCK", Opcode = null, OperandModel = OperandModel.BlockName, IsPseudoOp = true},
+        new InstructionDefinition {Mnemonic = "ENDBLOCK", Opcode = null, OperandModel = OperandModel.BlockName, IsPseudoOp = true},
         //DB
         //DW
         //DS

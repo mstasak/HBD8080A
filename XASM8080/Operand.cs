@@ -16,19 +16,27 @@ public enum OperandModel {
     R16OnlyBD, //BC or DE only
     Imm8,
     Imm16,
+    R8Imm8,
+    R16WithSPImm16,
     RstNum,
     DBList,
     DWList,
-    DSSize
+    DSSize,
+    BlockName,
 }
 
 public class Operand {
-    public string Name;
+    //public string Name;
     public bool IsResolved;
     public string Text;
-    public OperandModel OperandModel;
+    //public OperandModel OperandModel;
     public byte[]? Bytes;
-    public byte OpcodeModifier;  //or'ed to opcode to insert a register, rp, or rst code
+    public ushort WordValue; //for all types except strings, e.g. DB "Hello, World!\n"
+    public byte OpcodeModifier;  //shifted and masked code, to be or'ed to opcode to insert a register, rp, or rst code
     public bool HasError;
     public string ErrorDescription;
+
+    public Operand() {
+        //ErrorDescription = "";
+    }
 }

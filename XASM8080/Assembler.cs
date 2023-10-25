@@ -28,14 +28,14 @@ namespace XASM8080;
 //}
 
 
-internal class Assembler {
+public class Assembler {
 
     public static readonly char[] WhitespaceChars = new char[] { ' ', '\t' };
-    public SymbolTable SymbolTable;
-    public CodeGenerator CodeGenerator;
+    //public SymbolTable SymbolTable;
+    //public CodeGenerator CodeGenerator;
     public List<string> InputFilePaths;
 
-    private int Pass;
+    public int Pass;
     private int PriorPassUnresolvedSymbolRefs;
     //private bool finalPass = false;
     //private int passErrorCount = 0;
@@ -46,8 +46,8 @@ internal class Assembler {
     ////private int? maxAddressWritten;
     ////private byte[] outputBuffer = new byte[65536];
 
-    private string? currentFileName;
-    private int currentLineNumber; //within file
+    public string? currentFileName;
+    public int currentLineNumber; //within file
     ////private string currentLinePart; // label, opcode, operand n, comment
     ////private string? currentLineLabel;
     ////private ushort? currentLineLabelValue;
@@ -65,21 +65,27 @@ internal class Assembler {
     //    get; set;
     //}
 
-    internal Assembler(IEnumerable<string> filePaths) {
-        SymbolTable = new();
-        CodeGenerator = new();
-        InputFilePaths = new(filePaths);
-    }
 
-    internal void Assemble() {
+
+    private static readonly Lazy<Assembler> lazy =
+        new(() => new Assembler());
+
+    public static Assembler Instance => lazy.Value;
+
+    private Assembler() {
+        InputFilePaths = XASMMain.InputFileNames;
+
+    }
+    
+    public void Assemble() {
         Pass = 1;
         PriorPassUnresolvedSymbolRefs = 0;
         bool needAnotherPass;
         //bool readyForFinalPass = false; //will be set when no issues remain, or last pass made no progress
         do {
-            CodeGenerator.Reset(Pass: Pass, Address: 0, FinalPass: false);
+            CodeGenerator.Instance.Reset(Pass: Pass, Address: 0, FinalPass: false);
             AssemblePass();
-            var passUnresolvedSymbolRefs = SymbolTable.UnresolvedSymbolRefCount();
+            var passUnresolvedSymbolRefs = SymbolTable.Instance.UnresolvedSymbolRefCount();
             //int passUnknownSymbolCount = SymbolTable.UnknownSymbolCount();
             needAnotherPass = (passUnresolvedSymbolRefs > 0) && (passUnresolvedSymbolRefs < PriorPassUnresolvedSymbolRefs);
             PriorPassUnresolvedSymbolRefs = passUnresolvedSymbolRefs;
@@ -90,7 +96,7 @@ internal class Assembler {
             DisplayMessage($"Assembly aborted after {Pass} passes.  There are {PriorPassUnresolvedSymbolRefs} unresolvable symbols.");
         } else {
             //begin final pass
-            CodeGenerator.Reset(Pass: Pass, Address: 0, FinalPass: true);
+            CodeGenerator.Instance.Reset(Pass: Pass, Address: 0, FinalPass: true);
             AssemblePass();
             DisplayMessage($"Assembly completed in {Pass} passes.");
             //CodeGenerator.DisplayOutputStatistics();
@@ -129,129 +135,9 @@ internal class Assembler {
     }
 
     private void AssembleLine(string s) {
-        //string? Label;
-        //string? Opcode;
-        //List<Operand> Operands = new();
-        //string? Comment;
-
-        ////parse line parts: [label;] [opcode [operand [,operand...]]] [;comment]
-        
-        ////label
-        //var match = Regex.Match(s, "^([0-9A-Z_a-z]*\\:)\\s",RegexOptions.IgnoreCase);
-        //if (match.Success) {
-        //    Label = match.Groups[1].Value;
-        //    s = s.Substring(match.Length);
-        //}
-        //s = s.TrimStart();
-
-        ////opcode
-        //var opcodeEnd = s.IndexOfAny(WhitespaceChars);
-        //if (opcodeEnd == -1) {
-        //    Opcode = s;
-        //} else {
-        //    Opcode = s.Substring(0, opcodeEnd);
-        //    s = s.Substring(opcodeEnd + 1);
-        //}
-        //if (s.Length == 0) {
-        //    Opcode = null;
-        //}
-
-        ////operand(s)
-        //s = s.TrimStart();
-        //if (Opcode != null) {
-        //    while (s.Length > 0 && !s.StartsWith(';')) {
-        //        var operand = ParseOperand(ref s);
-        //        if (operand == null) {
-        //            //error?
-        //            DisplayMessage($"Syntax error? Expected: Operand value, comment, or line end.");
-        //            break;
-        //        }
-        //    }
-        //}
-
-        ////comment
-        //s = s.TrimStart();
-        //if (s.StartsWith(';')) { 
-        //    Comment = s.Substring(1);
-        //    s = "";
-        //}
-        ////currentLineLabel = null;
-        ////currentLineLabelValue = null;
-        ////currentLineOpcodeText = null;
-        ////currentLineOpcodeData = null;
-        ////currentLineOperandText = null;
-        ////currentLineOperandData = null;
-        ////currentLineComment = null;
-        ////currentLineError = null;
-
-        ////parseLabel(ref s);
-        ////parseOpcode(ref s);
-        ////parseOperands(ref s);
-        ////parseComment(s);
-        ////emitCodeLine();
-        ////emitListingLine();
-        ////emitErrorLine();
-        ////if (currentLineLabel != null) {
-        ////    emitSymbolTableLine();
-        ////}
+        var SourceLine = new SourceCodeLine(s);
+        SourceLine.Parse();
     }
 
-    //private void parseLabel(ref string s) {
-    //    if (s.StartsWith(';')) {
-    //        return;
-    //    }
-    //    if (s.StartsWith(' ') || s.StartsWith('\t')) {
-    //        s = s.TrimStart();
-    //        return;
-    //    }
-    //    var labelLength = s.IndexOfAny(WhitespaceChars);
-    //    var label = s.Substring(0, labelLength).TrimStart().TrimEnd(':');
-    //    currentLineLabel = label;
-    //    s = s.Substring(labelLength).TrimStart();
-    //    return;
-    //}
-
-    //private void parseOpcode(ref string s) {
-    //    //throw new NotImplementedException();
-    //    if (s.StartsWith(';')) {
-    //        return;
-    //    }
-
-    //    var endOpcd = s.IndexOfAny(WhitespaceChars);
-    //    if (endOpcd == -1) {
-    //        currentLineOpcodeText = s;
-    //        s = "";
-    //    } else {
-    //        currentLineOpcodeText = s.Substring(0, endOpcd);
-    //        s = s.Substring(endOpcd).TrimStart();
-    //    }
-    //    var NotFound = new InstructionDef();
-    //    var instr = InstructionSet8080.FirstOrDefault(i => i.mnemonic == currentLineOpcodeText, NotFound);
-    //    if (instr.mnemonic != "") {
-    //        currentLineOpcodeData = instr.opcode;
-    //    } else {
-    //        composeError($"unknown opcode '{currentLineOpcodeText}'");
-    //    }
-    //    return;
-    //}
-
-    //private void composeError(string err) {
-    //    var formattedError = $"Error in file {currentFileName}, line {currentLineNumber}: {err}.";
-    //    currentLineError = formattedError;
-    //}
-
-    //private void parseOperands(ref string s) {
-
-    //}
-
-    //private string? parseComment(string s) => throw new NotImplementedException();
-
-    //private void emitSymbolTableLine() => throw new NotImplementedException();
-
-    //private void emitListingLine() => throw new NotImplementedException();
-
-    //private void emitCodeLine() => throw new NotImplementedException();
-
-    //private void emitErrorLine() => throw new NotImplementedException();
 
 }
