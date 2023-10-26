@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "XASM8080": {
-      "commandName": "Project",
-      "commandLineArgs": "--help me"
-    }
-  }
-}
