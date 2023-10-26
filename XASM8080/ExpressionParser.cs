@@ -61,14 +61,14 @@ internal enum ExpressionType {
 }
 
 internal class ExpressionResult {
-    public string InputLine;
+    public string InputLine = "";
     public ExpressionType ExprType;
     public List<string>? UnresolvedSymbols;
     public ushort Value;
-    public string ExprSource;
-    public string RemainingInputLine;
-    public bool IsError;
-    public string ErrorMessage;
+    public string ExprSource = "";
+    public string RemainingInputLine = "";
+    public bool IsError = false;
+    public string ErrorMessage = "";
 }
 
 internal class ExpressionParser {
@@ -237,7 +237,7 @@ internal class ExpressionParser {
         }
     }
 
-    internal static ExpressionResult parseNumericExpression(string SourceString, int PrecedenceLevel = 0) {
+    internal static ExpressionResult ParseNumericExpression(string SourceString, int PrecedenceLevel = 0) {
 
         //Dictionary<int, string[]> precedenceLevelDefs = new() {
         //    { 5, new string[] { "*", "/", "%" } },
@@ -287,7 +287,7 @@ internal class ExpressionParser {
 
     };
 
-    ExpressionResult term1 = parseNumericExpression(SourceString: result.InputLine, PrecedenceLevel: PrecedenceLevel + 1);
+    ExpressionResult term1 = ParseNumericExpression(SourceString: result.InputLine, PrecedenceLevel: PrecedenceLevel + 1);
         if (PrecedenceLevel< 6) {
             //look for operator and term2
             //var operators = precedenceLevelDefs[PrecedenceLevel];

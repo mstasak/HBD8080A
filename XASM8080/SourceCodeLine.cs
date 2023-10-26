@@ -13,7 +13,7 @@ using Microsoft.Win32;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace XASM8080;
-public class SourceCodeLine {
+public partial class SourceCodeLine {
     /// <summary>
     /// This is the complete source code line; it will include line continuations (using \\\n)
     /// </summary>
@@ -55,28 +55,51 @@ public class SourceCodeLine {
         Comment = null;
     }
     public bool Parse() {
-        ParseAddressLabel();
+        ParseLabelDeclaration();
         ParseInstruction(); //includes operands
         ParseComment();
         return ErrorMessage != null;
     }
 
     public void SkipSpace() {
+        while (LinePosition < Source.Length) {
+            if (char.IsWhiteSpace(Source[LinePosition])) {
+                LinePosition++;
+            } else {
+                break;
+            }
+        }
     }
 
-    public void ParseAddressLabel() {
+    public bool SkipLiteral(string literal, bool ignoreCase) {
+        if (LinePosition + literal.Length - 1 < Source.Length) {
+            if (string.Compare(literal, Source[LinePosition..(LinePosition + literal.Length - 1)], ignoreCase) == 0) {
+                LinePosition += literal.Length;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void ParseLabelDeclaration() {
         SkipSpace();
+
+        //parse and categorize a label
+        string wholeLabel;
+        string leftpart;
+        string rightpart;
+        LabelKind labelKind;
         var labelSize = MatchRegExp("[0-9A-Za-z_$.]*:");
         if (labelSize > 0) {
             var LabelStr = Munch(labelSize - 1); // all but trailing colon
             Munch(1);
             Debug.Assert(LabelStr != null); //not sure why type is string?
-            //construct a very raw symbol definition - nothing but a name
-            Label = new() {
-                Name = LabelStr,
-                WordValue = CodeGenerator.Instance.MemoryAddress,
-                ResolvedInPass = Assembler.Instance.Pass
-            };
+            ////construct a very raw symbol definition - nothing but a name
+            //Label = new() {
+            //    Name = LabelStr,
+            //    WordValue = CodeGenerator.Instance.MemoryAddress,
+            //    ResolvedInPass = Assembler.Instance.Pass
+            //};
         }
     }
 
@@ -96,15 +119,23 @@ public class SourceCodeLine {
         return 0;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="skipCharacters"></param>
+    /// <returns></returns>
     public string Munch(int skipCharacters) {
         var rslt = Source[LinePosition..(LinePosition + skipCharacters - 1)];
         LinePosition += skipCharacters;
         return rslt ?? "";
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public void ParseInstruction() {
         SkipSpace();
-        ParseHereLabel();
+        ParseLabelDeclaration();
         SkipSpace();
         var opcodeLength = MatchRegExp("[A-Z]*");
         if (opcodeLength > 0) {
@@ -121,62 +152,71 @@ public class SourceCodeLine {
                 //parse operand(s)
                 switch (Instruction.Value.OperandModel) {
                     case OperandModel.R8Left:
-                        var oper = ParseOperandReg8();
-                        if (!oper.HasError && Opcode.HasValue) {
-                            Opcode = (byte)(Opcode | oper.OpcodeModifier);
-                        }
+                        Operands.Add(ParseOperandReg8());
+                        //if (!oper.HasError && Opcode.HasValue) { // <-- process in code emit later
+                        //    Opcode = (byte)(Opcode | oper.OpcodeModifier);
+                        //}
                         break;
                     case OperandModel.R8Right:
-                        var oper2 = ParseOperandReg8(false);
-                        if (!oper2.HasError && Opcode.HasValue) {
-                            Opcode = (byte)(Opcode | oper2.OpcodeModifier);
-                        }
+                        Operands.Add(ParseOperandReg8(false));
+                        //if (!oper2.HasError && Opcode.HasValue) {
+                        //    Opcode = (byte)(Opcode | oper2.OpcodeModifier);
+                        //}
                         break;
                     case OperandModel.Imm8:
-                        var oper3 = ParseOperandImmByte();
+                        Operands.Add(ParseOperandImmByte());
                         break;
                     case OperandModel.RstNum:
-                        var oper4 = ParseOperandRst();
+                        Operands.Add(ParseOperandRst());
                         break;
                     case OperandModel.R16WithSP:
-                        var oper5 = ParseOperandReg16WithSP();
-                        if (!oper5.HasError && Opcode.HasValue) {
-                            Opcode = (byte)(Opcode | oper5.OpcodeModifier);
-                        }
+                        Operands.Add(ParseOperandReg16WithSP());
+                        //if (!oper5.HasError && Opcode.HasValue) {
+                        //    Opcode = (byte)(Opcode | oper5.OpcodeModifier);
+                        //}
                         break;
                     case OperandModel.R16WithPSW:
-                        var oper6 = ParseOperandReg16WithPSW();
-                        if (!oper6.HasError && Opcode.HasValue) {
-                            Opcode = (byte)(Opcode | oper6.OpcodeModifier);
-                        }
+                        Operands.Add(ParseOperandReg16WithPSW());
+                        //if (!oper6.HasError && Opcode.HasValue) {
+                        //    Opcode = (byte)(Opcode | oper6.OpcodeModifier);
+                        //}
                         break;
                     case OperandModel.R16OnlyBD:
-                        var oper7 = ParseOperandReg16OnlyBD();
-                        if (!oper7.HasError && Opcode.HasValue) {
-                            Opcode = (byte)(Opcode | oper7.OpcodeModifier);
-                        }
+                        Operands.Add(ParseOperandReg16OnlyBD());
+                        //if (!oper7.HasError && Opcode.HasValue) {
+                        //    Opcode = (byte)(Opcode | oper7.OpcodeModifier);
+                        //}
                         break;
                     case OperandModel.Imm16:
-                        var oper8 = ParseOperandImmWord();
+                        Operands.Add(ParseOperandImmWord());
                         break;
                     case OperandModel.DBList:
-                        var oper9 = ParseOperandListDB();
+                        Operands.Add(ParseOperandListDB());
                         break;
                     case OperandModel.DWList:
-                        var oper10 = ParseOperandListDW();
+                        Operands.Add(ParseOperandListDW());
                         break;
                     case OperandModel.DSSize:
-                        var oper11 = ParseOperandImmWord();
+                        Operands.Add(ParseOperandImmWord());
                         break;
                     case OperandModel.None:
                         break;
-                    default:
-                        break;
+                    //default:
+                    //    break;
                 }
             }
         }
     }
 
+    private Operand ParseOperandListDB() => throw new NotImplementedException();
+    private Operand ParseOperandListDW() => throw new NotImplementedException();
+    private Operand ParseOperandImmWord() => throw new NotImplementedException();
+    private Operand ParseOperandImmByte() => throw new NotImplementedException();
+    private Operand ParseOperandRst() => throw new NotImplementedException();
+
+    /// <summary>
+    /// 
+    /// </summary>
     public void ParseComment() {
         SkipSpace();
         var found = MatchString(";");
@@ -198,6 +238,12 @@ public class SourceCodeLine {
         return false;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="LookupArray"></param>
+    /// <param name="ParsedText"></param>
+    /// <returns></returns>
     public int ParseForLookupEntry(string[] LookupArray, ref string ParsedText) {
         SkipSpace();
         var rv = 0;
@@ -215,121 +261,100 @@ public class SourceCodeLine {
     public Operand ParseOperandReg8(bool isLeft = true) {
         var parsedText = "";
         var nWhich = ParseForLookupEntry(regs8, ref parsedText);
-        var rslt = new Operand() {
-            Bytes = null,
-            IsResolved = true,
+        var rslt = new Operand(text: parsedText) {
             //Name = "reg8",
             //OperandModel = isLeft ? OperandModel.R8Left : OperandModel.R8Right,
             Text = parsedText
         };
         if (nWhich >= 0) {
+            //rslt.IsResolved = true;
+            rslt.WordValue = (ushort)nWhich;
             rslt.OpcodeModifier = (byte)((nWhich & 0x07) << 3);
-            rslt.HasError = false;
-            rslt.ErrorDescription = "";
         } else {
-            rslt.OpcodeModifier = 0;
             rslt.HasError = true;
             rslt.ErrorDescription = "Unrecognized register name";
         }
         return rslt;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     public Operand ParseOperandReg16WithSP() {
         var parsedText = "";
         var nWhich = ParseForLookupEntry(regs16SP, ref parsedText);
-        var rslt = new Operand() {
-            Bytes = null,
-            IsResolved = true,
+        var rslt = new Operand(text: parsedText) {
+            //IsResolved = true,
             //Name = "regpair16(BC/DE/HL/SP)",
             //OperandModel = OperandModel.R16WithSP,
-            Text = parsedText
         };
         if (nWhich >= 0) {
-            rslt.OpcodeModifier = (byte)((nWhich & 0x03) << 4);
-            rslt.HasError = false;
-            rslt.ErrorDescription = "";
+            rslt.WordValue = (ushort)nWhich; //this may be used in place of IsResolved to determine validity of operand value.
+            rslt.OpcodeModifier = (byte)((nWhich & 0x03) << 4); //this is actual useful operand value, or'ed to opcode
         } else {
-            rslt.OpcodeModifier = 0;
             rslt.HasError = true;
             rslt.ErrorDescription = "Unrecognized register pair name";
         }
         return rslt;
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     public Operand ParseOperandReg16WithPSW() {
         var parsedText = "";
         var nWhich = ParseForLookupEntry(regs16PSW, ref parsedText);
-        var rslt = new Operand() {
-            Bytes = null,
-            IsResolved = true,
+        var rslt = new Operand(text: parsedText) {
+            //IsResolved = true,
             //Name = "regpair16(BC/DE/HL/PSW)",
             //OperandModel = OperandModel.R16WithPSW,
-            Text = parsedText
         };
         if (nWhich >= 0) {
+            rslt.WordValue = (ushort)nWhich; //this may be used in place of IsResolved to determine validity of operand value.
             rslt.OpcodeModifier = (byte)((nWhich & 0x03) << 4);
-            rslt.HasError = false;
-            rslt.ErrorDescription = "";
         } else {
-            rslt.OpcodeModifier = 0;
             rslt.HasError = true;
             rslt.ErrorDescription = "Unrecognized register pair name";
         }
         return rslt;
     }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
     public Operand ParseOperandReg16OnlyBD() {
         var parsedText = "";
         var nWhich = ParseForLookupEntry(regs16BD, ref parsedText);
-        var rslt = new Operand() {
-            Bytes = null,
-            IsResolved = true,
+        var rslt = new Operand(text: parsedText) {
+            //IsResolved = true,
             //Name = "regpair16(BC/DE)",
             //OperandModel = OperandModel.R16OnlyBD,
-            Text = parsedText
         };
         if (nWhich >= 0) {
+            rslt.WordValue = (ushort)nWhich; //this may be used in place of IsResolved to determine validity of operand value.
             rslt.OpcodeModifier = (byte)((nWhich & 0x03) << 4);
-            rslt.HasError = false;
-            rslt.ErrorDescription = "";
         } else {
-            rslt.OpcodeModifier = (byte)0;
             rslt.HasError = true;
             rslt.ErrorDescription = "Unrecognized register pair name";
         }
         return rslt;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
     public enum EnumOperatorType {
         Binary,
         Prefix,
         Suffix //not used?
     }
 
-    public class OperatorDef {
-        public int Precedence;
-        public string Operator;
-        public EnumOperatorType OperatorType;
-        public Func<ushort, ushort, ushort> Calculate;
-
-    }
-
-    public OperatorDef[] Operators = {
-        new OperatorDef { Precedence = 0, Operator = "|", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a | b) },
-        new OperatorDef { Precedence = 1, Operator = "^", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a ^ b) },
-        new OperatorDef { Precedence = 2, Operator = "&", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a & b) },
-        new OperatorDef { Precedence = 3, Operator = "<<", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a << b) },
-        new OperatorDef { Precedence = 3, Operator = ">>", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a >> b) },
-        new OperatorDef { Precedence = 4, Operator = "+", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a + b) },
-        new OperatorDef { Precedence = 4, Operator = "-", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a - b) },
-        new OperatorDef { Precedence = 5, Operator = "*", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a * b) },
-        new OperatorDef { Precedence = 5, Operator = "/", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a / b) },
-        new OperatorDef { Precedence = 5, Operator = "%", OperatorType = EnumOperatorType.Binary, Calculate = (a, b) => (ushort)(a % b) },
-        new OperatorDef { Precedence = 6, Operator = "+", OperatorType = EnumOperatorType.Prefix, Calculate = (a, _) => (ushort)+a },
-        new OperatorDef { Precedence = 6, Operator = "-", OperatorType = EnumOperatorType.Prefix, Calculate = (a, _) => (ushort)-a },
-        new OperatorDef { Precedence = 6, Operator = "~", OperatorType = EnumOperatorType.Prefix, Calculate = (a, _) => (ushort)~a },
-        new OperatorDef { Precedence = 6, Operator = "<", OperatorType = EnumOperatorType.Prefix, Calculate = (a, _) => (ushort)(a & 0xff) },
-        new OperatorDef { Precedence = 6, Operator = ">", OperatorType = EnumOperatorType.Prefix, Calculate = (a, _) => (ushort)(a >> 8) },
-    };
-
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="precedenceLeval"></param>
+    /// <returns></returns>
     public Operand ParseNumericExpression(int precedenceLeval = 0) {
         Operand leftTerm;
         if (precedenceLeval > 5) {  //get a value
@@ -339,7 +364,7 @@ public class SourceCodeLine {
             if (leftTerm.Text == "") {
                 return leftTerm;
             }
-            var operators = Operators.Where(op => op.Precedence == precedenceLeval && op.OperatorType == EnumOperatorType.Binary);
+            var operators = OperatorDef.Operators.Where(op => op.Precedence == precedenceLeval && op.OperatorType == EnumOperatorType.Binary);
             OperatorDef? oper;
             do {
                 oper = ParseOperator(operators);
@@ -383,7 +408,7 @@ public class SourceCodeLine {
         //  a symbol
         //  (a parenthesized expression)
         //  prefix value (we'll tolerate unlimited prefixes like ---1)
-        Operand value;
+        Operand? value;
         SkipSpace();
 
         //number - hex
@@ -399,8 +424,8 @@ public class SourceCodeLine {
         }
 
         //symbol
-        value = ParseLabel();
-        if (!value.HasError) {
+        value = ParseLabelRef();
+        if ((value != null) && !value.HasError) {
             return value;
         }
 
@@ -421,7 +446,7 @@ public class SourceCodeLine {
         }
 
         //prefix val
-        var operators = Operators.Where(op => op.Precedence == 6 && op.OperatorType == EnumOperatorType.Prefix);
+        var operators = OperatorDef.Operators.Where(op => op.Precedence == 6 && op.OperatorType == EnumOperatorType.Prefix);
         OperatorDef? oper;
         oper = ParseOperator(operators);
         if (oper != null) {
@@ -431,7 +456,7 @@ public class SourceCodeLine {
         }
 
         //expression error - generic
-        value = new Operand() {
+        value = new Operand(text: "") {
             HasError = true,
             ErrorDescription = "Error evaluating an operand - valid value not found.",
         };
@@ -447,11 +472,11 @@ public class SourceCodeLine {
             var strDecimalNum = Munch(MatchLen);
             if (ushort.TryParse(strDecimalNum, System.Globalization.NumberStyles.HexNumber, null, out rsltVal)) {
                 //return result built on rsltVal
-                return new Operand() { Text = strDecimalNum, WordValue = rsltVal };
+                return new Operand(text: strDecimalNum) { WordValue = rsltVal };
             }
-            return new Operand() { HasError = true, ErrorDescription = "Range error?  Could not convert numeric literal to word (0000H - 0FFFFH, or 0-65535)." };
+            return new Operand(text: "") { HasError = true, ErrorDescription = "Range error?  Could not convert numeric literal to word (0000H - 0FFFFH, or 0-65535)." };
         }
-        return new Operand() { HasError = true, ErrorDescription = "Did not find a valid number" };
+        return new Operand(text: "") { HasError = true, ErrorDescription = "Did not find a valid number" };
     }
 
     public Operand ParseHexadecimalNumber() {
@@ -464,11 +489,11 @@ public class SourceCodeLine {
 
             if (ushort.TryParse(strHexadecimalNum[0..(strHexadecimalNum.Length - 1)], out rsltVal)) {
                 //return result built on rsltVal
-                return new Operand() { Text = strHexadecimalNum, WordValue = rsltVal };
+                return new Operand(text: strHexadecimalNum) { WordValue = rsltVal };
             }
-            return new Operand() { HasError = true, ErrorDescription = "Range error?  Could not convert numeric literal to word (0-65535)." };
+            return new Operand(text: "") { HasError = true, ErrorDescription = "Range error?  Could not convert numeric literal to word (0-65535)." };
         }
-        return new Operand() { HasError = true, ErrorDescription = "Did not find a valid number" };
+        return new Operand(text: "") { HasError = true, ErrorDescription = "Did not find a valid number" };
     }
 
     //public int MatchRegExp(string pattern, RegexOptions options = RegexOptions.IgnoreCase) {
@@ -483,8 +508,8 @@ public class SourceCodeLine {
     /// <summary>
     /// Parse a label operand value, as part of an operand expression (e.g. JMP label)
     /// </summary>
-    /// <returns>An Operand object, with appropriate error properties as needed</returns>
-    public Operand ParseLabelRef() {
+    /// <returns>An Operand object, with appropriate error properties as needed, or null if text does not match any valid label syntax.</returns>
+    public Operand? ParseLabelRef() {
         //symbol flavors declared:
         // abc: instruction... - a "normal" symbol defined uniquely within this file and accessable from only this file
         // $abc: instruction... - a global symbol which can be referenced from other files; unique to file
@@ -498,7 +523,7 @@ public class SourceCodeLine {
         // underthislabel.abc - a non-unique "local" symbol defined after the specified normal (filewide) symbol
         // blockname.abc - a non-unique "local" .symbol defined within a 'BLOCK blockname / ENDBLOCK blockname' range (not implemented)
         SkipSpace();
-        int symbolLen;
+        //int symbolLen;
         Regex re;
 
         //CASE: "normal label" - unique in file, invisible outside file
@@ -521,7 +546,10 @@ public class SourceCodeLine {
             };
             var checkedSymbol = SymbolTable.ProcessReference(sym); //add unresolved entry if not present; update ref count and get value, resolved status if found
             //symbol.AddReference(CurrentSourceCodeLocation());
-            return checkedSymbol;
+            return new Operand(text: symbolName) {
+                //IsResolved = checkedSymbol.WordValue != null, 
+                WordValue = checkedSymbol.WordValue
+            };
         }
 
         //CASE: "global label" - unique per file, may be forward-referenced (unresolved until later pass, add filename and address later)
@@ -543,15 +571,18 @@ public class SourceCodeLine {
                 //DeclarationLineNumber,
                 //ResolvedInPass
             };
-            var checkedSymbol = SymbolTable.ProcessReference(); //add unresolved entry if not present; update ref count and get value, resolved status if found
+            var checkedSymbol = SymbolTable.ProcessReference(sym); //add unresolved entry if not present; update ref count and get value, resolved status if found
             //symbol.AddReference(CurrentSourceCodeLocation());
-            return checkedSymbol;
+            return new Operand(text: symbolName) {
+                //IsResolved = checkedSymbol.WordValue != null, 
+                WordValue = checkedSymbol.WordValue
+            };
         }
 
         //CASE: "global filename.label" - unique per file, may be forward-referenced (unresolved until later pass, add filename and address later)
         //should rethink this - file.ext.label is a little bit of an RE parse headache, and should probably allow any valid filename within ""s
         //on second thought, should examine some modern assemblers for better approaches - NASM, Turbo-Asm, MASM, etc.
-        re = new("^\\$([a-z_][a-z_0-9]*\\.([a-z_][a-z_0-9]*)", RegexOptions.Singleline | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+        re = new("^\\$([a-z_][a-z_0-9]*)\\.([a-z_][a-z_0-9]*)", RegexOptions.Singleline | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
         match = re.Match(Source, LinePosition);
         if (match.Success) {
             // "global" label like $filename.abc_1
@@ -569,12 +600,15 @@ public class SourceCodeLine {
                 //DeclarationLineNumber,
                 //ResolvedInPass
             };
-            var checkedSymbol = SymbolTable.ProcessReference(); //add unresolved entry if not present; update ref count and get value, resolved status if found
+            var checkedSymbol = SymbolTable.ProcessReference(sym); //add unresolved entry if not present; update ref count and get value, resolved status if found
             //symbol.AddReference(CurrentSourceCodeLocation());
-            return checkedSymbol;
+            return new Operand(text: symbolName) {
+                //IsResolved = checkedSymbol.WordValue != null, 
+                WordValue = checkedSymbol.WordValue
+            };
         }
 
-        //CASE: "local label" - non-unique per file, may be forward-referenced (unresolved until later pass, add address later)
+        //CASE: "local label" - non-unique per file, may be forward-referenced (unresolved until later or future pass, add address later)
         re = new("^\\.[a-z_][a-z_0-9]*[^\\.]", RegexOptions.Singleline | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
         match = re.Match(Source, LinePosition);
         if (match.Success) {
@@ -594,10 +628,16 @@ public class SourceCodeLine {
                 //DeclarationLineNumber,
                 //ResolvedInPass
             };
-            var checkedSymbol = SymbolTable.ProcessReference(); //add unresolved entry if not present; update ref count and get value, resolved status if found
+            var checkedSymbol = SymbolTable.ProcessReference(sym); //add unresolved entry if not present; update ref count and get value, resolved status if found
             //symbol.AddReference(CurrentSourceCodeLocation());
-            return checkedSymbol;
+            return new Operand(text: symbolName) {
+                //IsResolved = checkedSymbol.WordValue != null, 
+                WordValue = checkedSymbol.WordValue
+            };
         }
 
+        //symbol not found (no appropriate character pattern)
+        //rslt = new Operand();
+        return null;
     }
 }

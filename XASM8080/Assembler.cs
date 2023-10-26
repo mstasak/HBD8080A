@@ -11,8 +11,8 @@ namespace XASM8080;
 
 /**
  * Multi-pass assembler, using "standard"-ish Microsoft/Intel syntax.
- * Not to pleased with the first cut, may scrap most and do over.
- * The details of a simple process do add up.  Too big for a reasonable
+ * Not too pleased with the first cut, may scrap most and do over.
+ * The details of a simple process do add up quickly.  Too big for a reasonable
  * single-file program, should probably make distinct classes for 
  * instruction set, output generator(s), expression evaluation, symbol table.
 **/
@@ -48,6 +48,7 @@ public class Assembler {
 
     public string? currentFileName;
     public int currentLineNumber; //within file
+    public string? MostRecentNormalLineLabel; //for [label].locallabel symbols
     ////private string currentLinePart; // label, opcode, operand n, comment
     ////private string? currentLineLabel;
     ////private ushort? currentLineLabelValue;
@@ -85,7 +86,7 @@ public class Assembler {
         do {
             CodeGenerator.Instance.Reset(Pass: Pass, Address: 0, FinalPass: false);
             AssemblePass();
-            var passUnresolvedSymbolRefs = SymbolTable.Instance.UnresolvedSymbolRefCount();
+            var passUnresolvedSymbolRefs = SymbolTable.Instance.SymbolValueUnresolvedCount();
             //int passUnknownSymbolCount = SymbolTable.UnknownSymbolCount();
             needAnotherPass = (passUnresolvedSymbolRefs > 0) && (passUnresolvedSymbolRefs < PriorPassUnresolvedSymbolRefs);
             PriorPassUnresolvedSymbolRefs = passUnresolvedSymbolRefs;
@@ -103,7 +104,7 @@ public class Assembler {
         }
     }
 
-    private void DisplayMessage(string v) {
+    private static void DisplayMessage(string v) {
         Console.WriteLine(v);
     }
 
@@ -124,7 +125,7 @@ public class Assembler {
         }
     }
 
-    private string? GetLineWithContinuations(StreamReader inFile) {
+    private static string? GetLineWithContinuations(StreamReader inFile) {
         var s = inFile.ReadLine();
         if (s != null) {
             while (s.EndsWith("\\") && !inFile.EndOfStream) {
@@ -134,10 +135,9 @@ public class Assembler {
         return s;
     }
 
-    private void AssembleLine(string s) {
+    private static void AssembleLine(string s) {
         var SourceLine = new SourceCodeLine(s);
         SourceLine.Parse();
     }
-
 
 }

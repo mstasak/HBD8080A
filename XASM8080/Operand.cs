@@ -27,16 +27,27 @@ public enum OperandModel {
 
 public class Operand {
     //public string Name;
-    public bool IsResolved;
+    //public bool IsResolved;
     public string Text;
     //public OperandModel OperandModel;
-    public byte[]? Bytes;
-    public ushort WordValue; //for all types except strings, e.g. DB "Hello, World!\n"
-    public byte OpcodeModifier;  //shifted and masked code, to be or'ed to opcode to insert a register, rp, or rst code
+    public byte[]? Bytes; //for variable length operands (db, dw)
+    public ushort? WordValue; //for all types except strings, e.g. DB "Hello, World!\n"
+    public byte? OpcodeModifier;  //shifted and masked code, to be or'ed to opcode to insert a register, rp, or rst code
     public bool HasError;
-    public string ErrorDescription;
+    public string? ErrorDescription;
 
-    public Operand() {
+    public Operand(string text) {
+        Text = text;
         //ErrorDescription = "";
+    }
+
+    public Operand(bool isResolved, string text, byte[]? bytes, ushort? wordValue, byte? opcodeModifier, bool hasError, string? errorDescription) {
+        //IsResolved = isResolved;
+        Text = text;
+        Bytes = bytes;
+        WordValue = wordValue;
+        OpcodeModifier = opcodeModifier;
+        HasError = hasError;
+        ErrorDescription = errorDescription;
     }
 }

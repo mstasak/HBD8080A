@@ -31,20 +31,25 @@ public class SymbolTable {
 
     public SymbolDefinition Add(SymbolDefinition sym) {
         SymbolDefinition? rslt = SymbolTab[sym.Name] as SymbolDefinition;
-        if (SymbolTab.ContainsKey(sym)) {
+        //if (SymbolTab.ContainsKey(sym)) {
 
-        } else {
-            SymbolTab.Add(sym.Name, sym);
-        }
+        //} else {
+        //    SymbolTab.Add(sym.Name, sym);
+        //}
         return rslt;
     }
 
-    internal int UnresolvedSymbolCount() {
-        throw new NotImplementedException();
+    internal int SymbolValueUnresolvedCount() {
+        return SymbolTab.Count(pair => pair.Value.WordValue == null);
     }
 
-    internal int UnresolvedSymbolRefCount() {
+    internal int RefSymbolNotFoundCount() {
+        return SymbolTab.Count(pair => pair.Value.DeclarationFileName == null);
+    }
+
+    internal static SymbolDefinition ProcessReference(SymbolDefinition sym) {
+        //if sym exists, update properties from sym and return actual reference
+        //else create unresolved ref in symbol table and return sym?
         throw new NotImplementedException();
     }
-    
 }

@@ -64,6 +64,13 @@ public class SymbolDefinition {
 public class BlockDefinition {
     public string FileName;
     public string BlockName;
-    public int StartLine;
-    public int EndLine;
+    public int? StartLine;
+    public int? EndLine;
+
+    public BlockDefinition(string fileName, string blockName, int? startLine, int? endLine) {
+        FileName = fileName;
+        BlockName = blockName;
+        StartLine = startLine;
+        EndLine = endLine;
+    }
 }
