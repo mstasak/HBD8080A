@@ -51,7 +51,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DumbTerminal\DumbTerminal.csproj" />
-    <ProjectReference Include="..\HDB8080A.Core\HBD8080A.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">
