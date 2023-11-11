@@ -4,10 +4,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MFComputer.Hardware.Computer;
+using HBD8080A.Hardware.Computer;
 using Microsoft.UI.Dispatching;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 
 public sealed class ComputerSystemService {

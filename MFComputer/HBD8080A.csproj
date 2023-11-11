@@ -3,7 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>MFComputer</RootNamespace>
+    <RootNamespace>HBD8080A</RootNamespace>
     <ApplicationIcon>Assets/WindowIcon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x86;x64;arm64</Platforms>
@@ -50,7 +50,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MFComputer.Core\MFComputer.Core.csproj" />
+    <ProjectReference Include="..\DumbTerminal\DumbTerminal.csproj" />
+    <ProjectReference Include="..\MFComputer.Core\HBD8080A.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">

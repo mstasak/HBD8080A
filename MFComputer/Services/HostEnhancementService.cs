@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 
 public sealed class HostEnhancementService {

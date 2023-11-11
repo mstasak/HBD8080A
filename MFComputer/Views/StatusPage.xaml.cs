@@ -1,8 +1,8 @@
-﻿using MFComputer.ViewModels;
+﻿using HBD8080A.ViewModels;
 
 using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 
 public sealed partial class StatusPage : Page
 {

@@ -1,9 +1,9 @@
-﻿using MFComputer.Core.Helpers;
+﻿using HBD8080A.Core.Helpers;
 
 using Windows.Storage;
 using Windows.Storage.Streams;
 
-namespace MFComputer.Helpers;
+namespace HBD8080A.Helpers;
 
 // Use these extension methods to store and retrieve local and roaming app data
 // More details regarding storing and retrieving app data at https://docs.microsoft.com/windows/apps/design/app-settings/store-and-retrieve-app-data

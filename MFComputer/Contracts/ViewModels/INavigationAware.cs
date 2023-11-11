@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Contracts.ViewModels;
+﻿namespace HBD8080A.Contracts.ViewModels;
 
 public interface INavigationAware
 {

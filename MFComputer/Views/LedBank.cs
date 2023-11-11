@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Newtonsoft.Json.Linq;
 using Windows.UI;
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 
 /// <summary>
 /// Storage class for a row of up to 8 LEDs.

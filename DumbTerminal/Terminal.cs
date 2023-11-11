@@ -7,7 +7,7 @@ public class DumbTerminalClient {
     //named pipes edition
     public static bool QuitRequested { get; set; } = false;
     public static void Main() {
-        Console.Title = "MFComputer Dumb Terminal";
+        Console.Title = "HBD8080A Dumb Terminal";
         Thread? clientKB;
         Thread? clientDisplay;
         //Console.WriteLine("\n*** Named pipe server stream with impersonation example ***\n");

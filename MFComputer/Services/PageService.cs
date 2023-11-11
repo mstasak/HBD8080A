@@ -1,12 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-using MFComputer.Contracts.Services;
-using MFComputer.ViewModels;
-using MFComputer.Views;
+using HBD8080A.Contracts.Services;
+using HBD8080A.ViewModels;
+using HBD8080A.Views;
 
 using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 public class PageService : IPageService
 {

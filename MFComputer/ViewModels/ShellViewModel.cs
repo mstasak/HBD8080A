@@ -3,12 +3,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using MFComputer.Contracts.Services;
+using HBD8080A.Contracts.Services;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace MFComputer.ViewModels;
+namespace HBD8080A.ViewModels;
 
 public partial class ShellViewModel : ObservableRecipient
 {

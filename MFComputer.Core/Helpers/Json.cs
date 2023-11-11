@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace MFComputer.Core.Helpers;
+namespace HBD8080A.Core.Helpers;
 
 public static class Json
 {

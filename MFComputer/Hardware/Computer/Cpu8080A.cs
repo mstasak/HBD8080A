@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics;
-using MFComputer.Services;
+using HBD8080A.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Newtonsoft.Json.Linq;
 
-namespace MFComputer.Hardware.Computer;
+namespace HBD8080A.Hardware.Computer;
 public class Cpu8080A {
 
     public static readonly byte TTY_STATUS_PORT = 0x03;

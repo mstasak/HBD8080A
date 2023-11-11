@@ -1,8 +1,8 @@
-﻿using MFComputer.Contracts.Services;
-using MFComputer.Helpers;
+﻿using HBD8080A.Contracts.Services;
+using HBD8080A.Helpers;
 using WinUIEx;
 
-namespace MFComputer;
+namespace HBD8080A;
 
 public sealed partial class MainWindow : WindowEx
 {

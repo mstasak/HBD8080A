@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Contracts.Services;
+﻿namespace HBD8080A.Contracts.Services;
 
 public interface ILocalSettingsService
 {

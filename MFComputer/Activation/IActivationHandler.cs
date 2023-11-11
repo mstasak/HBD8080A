@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Activation;
+﻿namespace HBD8080A.Activation;
 
 public interface IActivationHandler
 {

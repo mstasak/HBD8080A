@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Core.Contracts.Services;
+﻿namespace HBD8080A.Core.Contracts.Services;
 
 public interface IFileService
 {

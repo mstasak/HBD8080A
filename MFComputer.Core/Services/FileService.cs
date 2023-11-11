@@ -1,10 +1,10 @@
 ﻿using System.Text;
 
-using MFComputer.Core.Contracts.Services;
+using HBD8080A.Core.Contracts.Services;
 
 using Newtonsoft.Json;
 
-namespace MFComputer.Core.Services;
+namespace HBD8080A.Core.Services;
 
 public class FileService : IFileService
 {

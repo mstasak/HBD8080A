@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace MFComputer.Helpers;
+namespace HBD8080A.Helpers;
 
 public class EnumToBooleanConverter : IValueConverter
 {

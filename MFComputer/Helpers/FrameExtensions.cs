@@ -1,6 +1,6 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer.Helpers;
+namespace HBD8080A.Helpers;
 
 public static class FrameExtensions
 {

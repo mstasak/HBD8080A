@@ -22,7 +22,7 @@ using Windows.UI;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 public sealed partial class SwitchButtonRow : UserControl {
     public delegate void PanelChangedHandler(object sender, FrontPanelInputRowEventArgs e);
     public event PanelChangedHandler? OnPanelChanged;

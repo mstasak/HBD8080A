@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Models;
+﻿namespace HBD8080A.Models;
 
 public class LocalSettingsOptions
 {

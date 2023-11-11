@@ -1,6 +1,6 @@
 ﻿using Microsoft.Windows.ApplicationModel.Resources;
 
-namespace MFComputer.Helpers;
+namespace HBD8080A.Helpers;
 
 public static class ResourceExtensions
 {

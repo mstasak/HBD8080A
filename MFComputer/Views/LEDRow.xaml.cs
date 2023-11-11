@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Mvvm.ComponentModel;
-using MFComputer.ViewModels;
+using HBD8080A.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -22,7 +22,7 @@ using Windows.UI;
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 public sealed partial class LEDRow : UserControl {
 
     public string TopTitle { get; set; } = "Title"; //can be set from XAML, but no hot-reload available without observation?

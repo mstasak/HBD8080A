@@ -1,6 +1,6 @@
-﻿using MFComputer.Contracts.Services;
-using MFComputer.Helpers;
-using MFComputer.ViewModels;
+﻿using HBD8080A.Contracts.Services;
+using HBD8080A.Helpers;
+using HBD8080A.ViewModels;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Media;
 
 using Windows.System;
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 
 public sealed partial class ShellPage : Page
 {

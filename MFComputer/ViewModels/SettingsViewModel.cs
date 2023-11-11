@@ -4,14 +4,14 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-using MFComputer.Contracts.Services;
-using MFComputer.Helpers;
+using HBD8080A.Contracts.Services;
+using HBD8080A.Helpers;
 
 using Microsoft.UI.Xaml;
 
 using Windows.ApplicationModel;
 
-namespace MFComputer.ViewModels;
+namespace HBD8080A.ViewModels;
 
 public class SettingsViewModel : ObservableRecipient
 {

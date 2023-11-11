@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace MFComputer.ViewModels;
+namespace HBD8080A.ViewModels;
 
 public partial class TestbedViewModel : ObservableRecipient
 {

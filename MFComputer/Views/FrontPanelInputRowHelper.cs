@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 
 
 /// <summary>

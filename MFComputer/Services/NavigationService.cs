@@ -1,13 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-using MFComputer.Contracts.Services;
-using MFComputer.Contracts.ViewModels;
-using MFComputer.Helpers;
+using HBD8080A.Contracts.Services;
+using HBD8080A.Contracts.ViewModels;
+using HBD8080A.Helpers;
 
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 // For more information on navigation between pages see
 // https://github.com/microsoft/TemplateStudio/blob/main/docs/WinUI/navigation.md

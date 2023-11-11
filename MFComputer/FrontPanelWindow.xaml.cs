@@ -1,6 +1,6 @@
-﻿using MFComputer.Helpers;
+﻿using HBD8080A.Helpers;
 
-namespace MFComputer;
+namespace HBD8080A;
 
 public sealed partial class FrontPanelWindow : WindowEx
 {

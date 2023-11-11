@@ -1,19 +1,19 @@
-﻿using MFComputer.Activation;
-using MFComputer.Contracts.Services;
-using MFComputer.Core.Contracts.Services;
-using MFComputer.Core.Services;
-using MFComputer.Helpers;
-using MFComputer.Models;
-using MFComputer.Services;
-using MFComputer.ViewModels;
-using MFComputer.Views;
+﻿using HBD8080A.Activation;
+using HBD8080A.Contracts.Services;
+using HBD8080A.Core.Contracts.Services;
+using HBD8080A.Core.Services;
+using HBD8080A.Helpers;
+using HBD8080A.Models;
+using HBD8080A.Services;
+using HBD8080A.ViewModels;
+using HBD8080A.Views;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer;
+namespace HBD8080A;
 
 // To learn more about WinUI 3, see https://docs.microsoft.com/windows/apps/winui/winui3/.
 public partial class App : Application

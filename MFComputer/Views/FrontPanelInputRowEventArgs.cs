@@ -1,4 +1,4 @@
-﻿namespace MFComputer.Views;
+﻿namespace HBD8080A.Views;
 
 public class FrontPanelInputRowEventArgs : EventArgs
 {

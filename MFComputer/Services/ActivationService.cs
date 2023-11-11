@@ -1,11 +1,11 @@
-﻿using MFComputer.Activation;
-using MFComputer.Contracts.Services;
-using MFComputer.Views;
+﻿using HBD8080A.Activation;
+using HBD8080A.Contracts.Services;
+using HBD8080A.Views;
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 public class ActivationService : IActivationService
 {

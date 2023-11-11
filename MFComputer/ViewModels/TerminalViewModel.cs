@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using MFComputer.Services;
+using HBD8080A.Services;
 
-namespace MFComputer.ViewModels;
+namespace HBD8080A.ViewModels;
 
 public partial class TerminalViewModel : ObservableRecipient
 {

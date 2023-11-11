@@ -1,7 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace MFComputer.Contracts.Services;
+namespace HBD8080A.Contracts.Services;
 
 public interface INavigationService
 {

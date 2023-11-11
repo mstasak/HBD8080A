@@ -1,9 +1,9 @@
-﻿using MFComputer.Contracts.Services;
-using MFComputer.ViewModels;
+﻿using HBD8080A.Contracts.Services;
+using HBD8080A.ViewModels;
 
 using Microsoft.UI.Xaml;
 
-namespace MFComputer.Activation;
+namespace HBD8080A.Activation;
 
 public class DefaultActivationHandler : ActivationHandler<LaunchActivatedEventArgs>
 {

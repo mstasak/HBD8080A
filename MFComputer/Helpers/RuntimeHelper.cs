@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MFComputer.Helpers;
+namespace HBD8080A.Helpers;
 
 public class RuntimeHelper
 {

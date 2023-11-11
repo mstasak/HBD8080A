@@ -1,19 +1,19 @@
-﻿using MFComputer.Contracts.Services;
-using MFComputer.Core.Contracts.Services;
-using MFComputer.Core.Helpers;
-using MFComputer.Helpers;
-using MFComputer.Models;
+﻿using HBD8080A.Contracts.Services;
+using HBD8080A.Core.Contracts.Services;
+using HBD8080A.Core.Helpers;
+using HBD8080A.Helpers;
+using HBD8080A.Models;
 
 using Microsoft.Extensions.Options;
 
 using Windows.ApplicationModel;
 using Windows.Storage;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 public class LocalSettingsService : ILocalSettingsService
 {
-    private const string _defaultApplicationDataFolder = "MFComputer/ApplicationData";
+    private const string _defaultApplicationDataFolder = "HBD8080A/ApplicationData";
     private const string _defaultLocalSettingsFile = "LocalSettings.json";
 
     private readonly IFileService _fileService;

@@ -1,8 +1,8 @@
-﻿using MFComputer.ViewModels;
+﻿using HBD8080A.ViewModels;
 
 using Microsoft.UI.Xaml.Controls;
 
-namespace MFComputer.Views;
+namespace HBD8080A.Views;
 
 // TODO: Set the URL for your privacy policy by updating SettingsPage_PrivacyTermsLink.NavigateUri in Resources.resw.
 public sealed partial class SettingsPage : Page

@@ -4,9 +4,9 @@ using Microsoft.UI.Dispatching;
 using Windows.Media.Audio;
 //using System.Threading;
 //using System.Threading.Tasks;
-//using MFComputer.Hardware.Computer;
+//using HBD8080A.Hardware.Computer;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 public class DumbTerminalService {
 
@@ -92,7 +92,7 @@ public class DumbTerminalService {
             //configure client
             if (pipeClient == null) {
                 pipeClient = new Process();
-                pipeClient.StartInfo.FileName = "F:\\dev\\MFComputer\\DumbTerminal\\bin\\Debug\\net7.0\\DumbTerminal.exe";
+                pipeClient.StartInfo.FileName = "F:\\dev\\HBD8080A\\DumbTerminal\\bin\\Debug\\net7.0\\DumbTerminal.exe";
                 //pipeClient.StartInfo.FileName = "DumbTerminal.exe";
                 pipeClient.StartInfo.UseShellExecute = false;
                 pipeClient.Start();

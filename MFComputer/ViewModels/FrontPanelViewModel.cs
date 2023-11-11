@@ -1,12 +1,12 @@
 ﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using CommunityToolkit.Mvvm.ComponentModel;
-using MFComputer.Hardware.Computer;
-using MFComputer.Services;
-using MFComputer.Views;
+using HBD8080A.Hardware.Computer;
+using HBD8080A.Services;
+using HBD8080A.Views;
 using Microsoft.UI.Dispatching;
 
-namespace MFComputer.ViewModels;
+namespace HBD8080A.ViewModels;
 
 public class FrontPanelViewModel : ObservableRecipient {
     private byte outputLEDs;
@@ -246,7 +246,7 @@ public class FrontPanelViewModel : ObservableRecipient {
         Cpu.Memory[pc++] = 0xF1; //003E           POP PSW
         Cpu.Memory[pc++] = 0xC9; //003F           RET
         pc=0X100;                //ORG 100H
-        Cpu.Memory[pc++] = 0x48; //0100 HELLOMSG: DB "Hello World, from MFComputer!\0"
+        Cpu.Memory[pc++] = 0x48; //0100 HELLOMSG: DB "Hello World, from HBD8080A!\0"
         Cpu.Memory[pc++] = 0x65; //
         Cpu.Memory[pc++] = 0x6C; //
         Cpu.Memory[pc++] = 0x6C; //

@@ -1,9 +1,9 @@
-﻿using MFComputer.Contracts.Services;
-using MFComputer.Helpers;
+﻿using HBD8080A.Contracts.Services;
+using HBD8080A.Helpers;
 
 using Microsoft.UI.Xaml;
 
-namespace MFComputer.Services;
+namespace HBD8080A.Services;
 
 public class ThemeSelectorService : IThemeSelectorService
 {
