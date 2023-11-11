@@ -1,4 +1,4 @@
-# HDB8080A (formerly MFComputer)
+# HBD8080A (formerly MFComputer)
 A minimally functional computer simulator/emulator. (maybe some day moderately
 or maximally???) 
 
