@@ -48,10 +48,6 @@
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="WinUIEx" Version="2.2.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DumbTerminal\DumbTerminal.csproj" />
-  </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -80,6 +76,10 @@
 
   <ItemGroup>
     <Folder Include="Themes\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HBD8080A.Core\HBD8080A.Core.csproj" />
   </ItemGroup>
   
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">

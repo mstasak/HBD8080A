@@ -1,10 +1,14 @@
 {
   "profiles": {
-    "MFComputer (Package)": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "HBD8080A (Package)": {
       "commandName": "MsixPackage",
       "nativeDebugging": true
     },
-    "MFComputer (Unpackaged)": {
+    "HBD8080A (Unpackaged)": {
       "commandName": "Project"
     }
   }
