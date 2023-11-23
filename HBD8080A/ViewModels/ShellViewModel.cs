@@ -37,6 +37,18 @@ public partial class ShellViewModel : ObservableRecipient
     {
         get;
     }
+    public ICommand MenuViewsMemoryCommand
+    {
+        get;
+    }
+    public ICommand MenuViewsRegistersCommand
+    {
+        get;
+    }
+    public ICommand MenuViewsDisAsmCommand
+    {
+        get;
+    }
 
     //public ICommand MenuViewsFrontPanelCommand
     //{
@@ -70,6 +82,9 @@ public partial class ShellViewModel : ObservableRecipient
         //MenuViewsFrontPanelCommand = new RelayCommand(OnMenuViewsFrontPanel);
         MenuSettingsCommand = new RelayCommand(OnMenuSettings);
         MenuViewsStatusCommand = new RelayCommand(OnMenuViewsStatus);
+        MenuViewsMemoryCommand = new RelayCommand(OnMenuViewsMemory);
+        MenuViewsRegistersCommand = new RelayCommand(OnMenuViewsRegisters);
+        MenuViewsDisAsmCommand = new RelayCommand(OnMenuViewsDisAsm);
         MenuViewsMainCommand = new RelayCommand(OnMenuViewsMain);
     }
 
@@ -83,6 +98,9 @@ public partial class ShellViewModel : ObservableRecipient
     //private void OnMenuViewsFrontPanel() => NavigationService.NavigateTo(typeof(FrontPanelViewModel).FullName!);
 
     private void OnMenuSettings() => NavigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
+    private void OnMenuViewsMemory() => NavigationService.NavigateTo(typeof(MemoryViewModel).FullName!);
+    private void OnMenuViewsRegisters() => NavigationService.NavigateTo(typeof(RegistersViewModel).FullName!);
+    private void OnMenuViewsDisAsm() => NavigationService.NavigateTo(typeof(DisAsmViewModel).FullName!);
 
     private void OnMenuViewsStatus() => NavigationService.NavigateTo(typeof(StatusViewModel).FullName!);
 

@@ -7,7 +7,9 @@
     xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     Loaded="OnLoaded"
     Unloaded="OnUnloaded"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Width="1024"
+    Height="600">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
@@ -35,7 +37,10 @@
                     <MenuBarItem.Items>
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Main" Command="{x:Bind ViewModel.MenuViewsMainCommand}" />
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Status" Command="{x:Bind ViewModel.MenuViewsStatusCommand}" />
-                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Testbed" Command="{x:Bind ViewModel.MenuViewsTestbedCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Memory" Command="{x:Bind ViewModel.MenuViewsMemoryCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Registers" Command="{x:Bind ViewModel.MenuViewsRegistersCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_DisAsm" Command="{x:Bind ViewModel.MenuViewsDisAsmCommand}" />
+                        <!--<MenuFlyoutItem x:Uid="ShellMenuItem_Views_Testbed" Command="{x:Bind ViewModel.MenuViewsTestbedCommand}" />-->
                         <!--<MenuFlyoutItem x:Uid="ShellMenuItem_Views_FrontPanel" Command="{x:Bind ViewModel.MenuViewsFrontPanelCommand}" />-->
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Terminal" Command="{x:Bind ViewModel.MenuViewsTerminalCommand}" />
                     </MenuBarItem.Items>

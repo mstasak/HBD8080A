@@ -88,8 +88,14 @@ public partial class App : Application
             services.AddSingleton<FrontPanelViewModel>();
             services.AddTransient<StatusPage>();
             services.AddTransient<StatusViewModel>();
-            services.AddTransient<SettingsViewModel>();
             services.AddTransient<SettingsPage>();
+            services.AddTransient<SettingsViewModel>();
+            services.AddTransient<MemoryPage>();
+            services.AddTransient<MemoryViewModel>();
+            services.AddTransient<RegistersPage>();
+            services.AddTransient<RegistersViewModel>();
+            services.AddTransient<DisAsmPage>();
+            services.AddTransient<DisAsmViewModel>();
             services.AddSingleton<TestbedPage>();
             services.AddSingleton<TestbedViewModel>();
 

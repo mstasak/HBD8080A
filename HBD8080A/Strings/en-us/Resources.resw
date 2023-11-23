@@ -198,4 +198,13 @@
     <value>Terminal</value>
     <comment>Page title for TerminalPage</comment>
   </data>
+  <data name="ShellMenuItem_Views_DisAsm.Text" xml:space="preserve">
+    <value>Disassembly</value>
+  </data>
+  <data name="ShellMenuItem_Views_Memory.Text" xml:space="preserve">
+    <value>Memory</value>
+  </data>
+  <data name="ShellMenuItem_Views_Registers.Text" xml:space="preserve">
+    <value>Registers</value>
+  </data>
 </root>

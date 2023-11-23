@@ -20,6 +20,9 @@ public class PageService : IPageService
         Configure<TestbedViewModel, TestbedPage>();
         Configure<FrontPanelViewModel, FrontPanelPage>();
         Configure<TerminalViewModel, TerminalPage>();
+        Configure<MemoryViewModel, MemoryPage>();
+        Configure<RegistersViewModel, RegistersPage>();
+        Configure<DisAsmViewModel, DisAsmPage>();
     }
 
     public Type GetPageType(string key)
