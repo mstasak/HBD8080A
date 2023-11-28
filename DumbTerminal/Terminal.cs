@@ -8,6 +8,7 @@ public class DumbTerminalClient {
     public static bool QuitRequested { get; set; } = false;
     public static void Main() {
         Console.Title = "HBD8080A Dumb Terminal";
+        Console.TreatControlCAsInput = true;
         Thread? clientKB;
         Thread? clientDisplay;
         //Console.WriteLine("\n*** Named pipe server stream with impersonation example ***\n");

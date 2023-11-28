@@ -31,17 +31,17 @@ public sealed partial class MemoryPage : Page
         var Cpu = Computer.Cpu;
         var memory = Cpu.Memory;
 
-        for (int i = 0; i < 65536; i += 16) {
+        for (var i = 0; i < 65536; i += 16) {
             var sHex = "";
             var sText = "";
-            sHex = sHex + $"{i:X4}: ";
-            for (int j = 0; j < 16; j++) {
-                sHex = sHex + $"{memory[i+j]:X2} ";
+            sHex += $"{i:X4}: ";
+            for (var j = 0; j < 16; j++) {
+                sHex += $"{memory[i + j]:X2} ";
                 var ch = memory[i + j];
                 if (ch < 32) {
-                    sText = sText + ".";
+                    sText += ".";
                 } else {
-                    sText = sText + (char)ch;
+                    sText += (char)ch;
                 }
             }
 
