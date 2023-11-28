@@ -20,6 +20,11 @@ http://retro.hansotten.nl/6502-sbc/kim-1-manuals-and-software/kim-1-simulator/
 
 https://www.hanselman.com/blog/emulating-a-playstation-1-psx-entirely-with-c-and-net
 
+*new https://enginedesigns.net/retroassembler - I use this cross-assembler to
+compile a binary image for Dr. Wang's Palo Alto Tiny Basic.  It is extremely fast and
+feature-rich, but required some source code updates to accomodate its pseudo-op
+names and expression syntax.
+
 FWIW, this stuff isn't hard to find, just search for 8080A emulator Windows.
 
 "emustudio" seems to have a very nice Java-based emulation system, with assembler,
