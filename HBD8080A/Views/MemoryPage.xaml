@@ -26,10 +26,66 @@
     <StackPanel Orientation="Vertical">
         <TextBlock>Memory Contents:</TextBlock>
         <TextBox x:Name="txtMemory" Text="loading..." FontFamily="Courier New"
-                 Width="800" Height="400"
+                 Width="1050" Height="320"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  AcceptsReturn="True"
                  TextWrapping="Wrap"
                  />
+        <Grid x:Name="RegistersGrid" RowSpacing="10" ColumnSpacing="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="40" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="70" />
+                <ColumnDefinition Width="70" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="70" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="PC" />
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="SP" />
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="A" />
+            <TextBlock Grid.Row="0" Grid.Column="3" Text="B" />
+            <TextBlock Grid.Row="0" Grid.Column="4" Text="C" />
+            <TextBlock Grid.Row="0" Grid.Column="5" Text="D" />
+            <TextBlock Grid.Row="0" Grid.Column="6" Text="E" />
+            <TextBlock Grid.Row="0" Grid.Column="7" Text="H" />
+            <TextBlock Grid.Row="0" Grid.Column="8" Text="L" />
+            <TextBlock Grid.Row="0" Grid.Column="9" Text="M [HL]" />
+            <TextBlock MaxLines="2" TextWrapping="Wrap" Grid.Row="0" Grid.Column="10" Text="Flags ZSPCA" />
+            <TextBox x:Name="PCBox" Grid.Row="1" Grid.Column="0" Text="0000" />
+            <TextBox x:Name="SPBox" Grid.Row="1" Grid.Column="1" Text="F000" />
+            <TextBox x:Name="ABox" Grid.Row="1" Grid.Column="2" Text="00" />
+            <TextBox x:Name="BBox" Grid.Row="1" Grid.Column="3" Text="00" />
+            <TextBox x:Name="CBox" Grid.Row="1" Grid.Column="4" Text="00" />
+            <TextBox x:Name="DBox" Grid.Row="1" Grid.Column="5" Text="00" />
+            <TextBox x:Name="EBox" Grid.Row="1" Grid.Column="6" Text="00" />
+            <TextBox x:Name="HBox" Grid.Row="1" Grid.Column="7" Text="00" />
+            <TextBox x:Name="LBox" Grid.Row="1" Grid.Column="8" Text="00" />
+            <TextBox x:Name="MBox" Grid.Row="1" Grid.Column="9" Text="00" />
+            <TextBox x:Name="FlagBox" Grid.Row="1" Grid.Column="10" Text="0 1 1 0 0" />
+        </Grid>
+        <Grid x:Name="ControlsGrid" RowSpacing="10" ColumnSpacing="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="130" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Row="0" Grid.Column="0" x:Name="RefreshBtn" Click="RefreshBtn_Click">Refresh</Button>
+            <Button Grid.Row="0" Grid.Column="1" x:Name="StepBtn" Click="StepBtn_Click">Step</Button>
+            <Button Grid.Row="0" Grid.Column="2" x:Name="RunBtn" Click="RunBtn_Click">Run</Button>
+            <Button Grid.Row="0" Grid.Column="3" x:Name="StopBtn" Click="StopBtn_Click">Stop</Button>
+        </Grid>
     </StackPanel>
 </Page>

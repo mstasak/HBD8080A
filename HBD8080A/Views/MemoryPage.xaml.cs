@@ -13,24 +13,28 @@ public sealed partial class MemoryPage : Page
     {
         get;
     }
+    public ComputerSystemService Computer {
+        get;
+    }
+    public Cpu8080A Cpu {
+        get;
+    }
 
     public MemoryPage()
     {
         ViewModel = App.GetService<MemoryViewModel>();
+        Computer = App.GetService<ComputerSystemService>();
+        Cpu = Computer.Cpu;
         InitializeComponent();
     }
 
     private void Page_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        StringBuilder sb = new();
-        
-        //for (int line = 1; line <= 1000; line++) {
-        //    sb.Append($"Line {line,4}\n");   
-        //}
-        
-        var Computer = App.GetService<ComputerSystemService>();
-        var Cpu = Computer.Cpu;
-        var memory = Cpu.Memory;
+        RefreshMemoryView();
+    }
 
+    private void RefreshMemoryView() {
+        StringBuilder sb = new();
+        var memory = Cpu.Memory;
         for (var i = 0; i < 65536; i += 16) {
             var sHex = "";
             var sText = "";
@@ -49,6 +53,36 @@ public sealed partial class MemoryPage : Page
         }
 
         txtMemory.Text = sb.ToString();
+    }
+
+    private void RefreshBtn_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+        //MVVM be damned (sometimes)!  This is easier than setting up observable viewmodel property bindings.
+        //At least for RAD prototype work.
+        PCBox.Text = $"{Cpu.PC:X4}";
+        SPBox.Text = $"{Cpu.A:X4}";
+        ABox.Text = $"{Cpu.A:X2}";
+        BBox.Text = $"{Cpu.B:X2}";
+        CBox.Text = $"{Cpu.C:X2}";
+        DBox.Text = $"{Cpu.D:X2}";
+        EBox.Text = $"{Cpu.E:X2}";
+        HBox.Text = $"{Cpu.H:X2}";
+        LBox.Text = $"{Cpu.L:X2}";
+        MBox.Text = $"{Cpu.M:X2}";
+        FlagBox.Text = $"{Cpu.A:X2}";
+        ABox.Text = $"{Cpu.A:X2}";
+        RefreshMemoryView();
+    }
+
+    private void StepBtn_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+
+    }
+
+    private void RunBtn_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+
+    }
+
+    private void StopBtn_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
+
     }
 }
 
