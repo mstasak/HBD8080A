@@ -104,5 +104,5 @@ public partial class ShellViewModel : ObservableRecipient
 
     private void OnMenuViewsStatus() => NavigationService.NavigateTo(typeof(StatusViewModel).FullName!);
 
-    private void OnMenuViewsMain() => NavigationService.NavigateTo(typeof(MainViewModel).FullName!);
+    private void OnMenuViewsMain() => NavigationService.NavigateTo(typeof(FrontPanelViewModel).FullName!);
 }

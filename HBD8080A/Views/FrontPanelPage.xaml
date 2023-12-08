@@ -6,9 +6,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:src="using:HBD8080A.Views"
         mc:Ignorable="d"
-        Width="1700"
-        Height="740"
+        Width="1760"
+        Height="750"
+        MinWidth="1760"
+        MinHeight="750" 
     >
+    
 
     <Grid x:Name="ContentArea" Background="#ff1e1e1e" BorderBrush="LightBlue" BorderThickness="5">
         <Grid.RowDefinitions>
@@ -52,7 +55,7 @@
                        ButtonLabels="A7/M7,A6/M6,A5/M5,A4/M4,A3/M3,A2/M2,A1/M1,A0/M0" />
 
         <Grid Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Right" VerticalAlignment="Center">
-            <TextBlock HorizontalAlignment="Right" FontSize="48" FontWeight="ExtraBold" FontFamily="Script"  Foreground="LightBlue">
+            <TextBlock HorizontalAlignment="Center" FontSize="48" FontWeight="ExtraBold" FontFamily="Script"  Foreground="LightBlue">
                 HBD8080A 8080A 50th Anniversary
             </TextBlock>
         </Grid>
@@ -73,8 +76,8 @@
         <Button Grid.Row="5" Grid.Column="0" Margin="10,0,0,0"  Click="ViewModel.TerminalTest_Click">Basic DumbTTY test</Button>
         <TextBlock Grid.Row="5" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Read from keyboard and output to display</TextBlock>
         <Button Grid.Row="6" Grid.Column="0" Margin="10,0,0,0"  Click="ViewModel.SCS_Click">Self Contained System</Button>
-        <TextBlock Grid.Row="6" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">IMSAI Monitor &amp; Assembler</TextBlock>
+        <TextBlock Grid.Row="6" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Load IMSAI Monitor &amp; Assembler</TextBlock>
         <Button Grid.Row="7" Grid.Column="0" Margin="10,0,0,0"  Click="ViewModel.PATB_Click">Tiny Basic</Button>
-        <TextBlock Grid.Row="7" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Load and run Palo Alto Tiny Basic</TextBlock>
+        <TextBlock Grid.Row="7" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Load Palo Alto Tiny Basic</TextBlock>
     </Grid>
 </Page>

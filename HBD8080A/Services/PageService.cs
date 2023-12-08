@@ -14,11 +14,11 @@ public class PageService : IPageService
 
     public PageService()
     {
-        Configure<MainViewModel, MainPage>();
+        //Configure<MainViewModel, MainPage>();
+        Configure<FrontPanelViewModel, FrontPanelPage>();
         Configure<StatusViewModel, StatusPage>();
         Configure<SettingsViewModel, SettingsPage>();
         Configure<TestbedViewModel, TestbedPage>();
-        Configure<FrontPanelViewModel, FrontPanelPage>();
         Configure<TerminalViewModel, TerminalPage>();
         Configure<MemoryViewModel, MemoryPage>();
         Configure<RegistersViewModel, RegistersPage>();

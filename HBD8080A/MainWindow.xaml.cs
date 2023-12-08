@@ -12,7 +12,7 @@ public sealed partial class MainWindow : WindowEx
 
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets/WindowIcon.ico"));
         Content = null;
-        Title = "AppDisplayName".GetLocalized();
+        Title = "???"; //"AppDisplayName".GetLocalized();
         Closed += MainWindow_Closed;
         //SystemBackdrop = Microsoft.UI.Xaml.Media.MicaBackdrop;
         if (Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported())

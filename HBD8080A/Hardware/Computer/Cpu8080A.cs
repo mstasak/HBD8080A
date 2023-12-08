@@ -340,7 +340,7 @@ public class Cpu8080A {
     }
     #endregion Memory
 
-    #region Execution
+    #region Instruction Execution
     /// <summary>
     /// Run one instruction.  PC is advanced past instruction and any operand bytes.
     /// </summary>
@@ -1974,7 +1974,7 @@ public class Cpu8080A {
         }
         Flags = tmpFlags;
     }
-    #endregion Execution
+    #endregion Instruction Execution
 
     #region Input/Output
 

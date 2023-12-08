@@ -8,12 +8,15 @@
     Loaded="OnLoaded"
     Unloaded="OnUnloaded"
     mc:Ignorable="d"
-    Width="1024"
-    Height="600">
+    Width="1790"
+    Height="960"
+    MinWidth="1790"
+    MinHeight="960" >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32" />
             <RowDefinition Height="48" />
+            <RowDefinition Height="60" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" x:Name="AppTitleBar">
@@ -61,7 +64,41 @@
                 </AnimatedIcon>
             </AppBarButton>
         </Grid>
-        <Grid Grid.Row="2" Margin="{StaticResource MenuBarContentMargin}">
+        <CommandBar Grid.Row="2" 
+                    Height="60" 
+                    Loaded="CommandBar_Loaded"
+                    DefaultLabelPosition="Bottom">
+            <AppBarButton x:Name="BtnMonitor"
+                          Label="Monitor" 
+                          LabelPosition="Default"
+                          Click="Monitor_Click"/> <!--Icon="Directions"-->
+            <AppBarButton x:Name="BtnLoad"
+                          Label="Load" 
+                          LabelPosition="Default"
+                          Click="Load_Click"/>
+            <AppBarButton x:Name="BtnPeripherals"
+                          LabelPosition="Default"
+                          Label="Peripherals &amp; Accessories">
+                <AppBarButton.Flyout>
+                    <MenuFlyout>
+                        <ToggleMenuFlyoutItem Text="Text Terminal" IsChecked="True"/>
+                        <ToggleMenuFlyoutItem Text="Graphics Terminal" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="Line Printer" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="RealTime Clock" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="HostDatabase" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="HostNetwork" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="HostFileArea" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="Log Viewer" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="Memory View" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="Disassembly View" IsChecked="False"/>
+                        <ToggleMenuFlyoutItem Text="Debugger" IsChecked="False"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Clear All"/>
+                    </MenuFlyout>
+                </AppBarButton.Flyout>
+            </AppBarButton>
+        </CommandBar>
+        <Grid Grid.Row="3" Margin="{StaticResource MenuBarContentMargin}">
             <Frame x:Name="NavigationFrame" />
         </Grid>
     </Grid>

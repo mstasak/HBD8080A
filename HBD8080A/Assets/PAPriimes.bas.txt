@@ -1,0 +1,18 @@
+﻿10                           REM PALO ALTO TINY BASIC PRIME NUMBER LIST
+20                           REM SETUP
+30 L=1000;                   REM LIMIT
+40 PRINT 2,3,;               REM PRECALCULATE FIRST 2
+50 C=2;                      REM NUMBER PRINTED ON CURRENT LINE SO FAR
+60 N=5;                      REM NEXT NUMBER TO TEST
+100                          REM CHECK IF N IS PRIME
+110 FOR D=3 TO N/3 STEP 2
+120   IF D*D>N GOTO 200
+130   IF N/D*D=N GOTO 300
+140 NEXT D
+200                          REM FOUND A PRIME; PRINT IT AND FINISH LINE IF NEEDED
+210 PRINT N,
+220 C=C+1
+230 IF C>9 C=0; PRINT
+300                          REM NEXT TEST IF N+2 IS PRIME, OR EXIT IF WE'VE PASSED LIMIT (L)
+310 N=N+2
+320 IF N<=L GOTO 100

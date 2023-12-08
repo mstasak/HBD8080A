@@ -78,14 +78,14 @@ public partial class App : Application
             services.AddSingleton<Hardware.Computer.Cpu8080A>();
 
             // Views and ViewModels
+            services.AddSingleton<FrontPanelViewModel>();
             services.AddTransient<TerminalViewModel>();
             services.AddTransient<TerminalPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
-            services.AddTransient<MainPage>();
+            //services.AddTransient<MainPage>();
             services.AddTransient<MainViewModel>();
             services.AddSingleton<FrontPanelPage>();
-            services.AddSingleton<FrontPanelViewModel>();
             services.AddTransient<StatusPage>();
             services.AddTransient<StatusViewModel>();
             services.AddTransient<SettingsPage>();
@@ -127,12 +127,12 @@ public partial class App : Application
 
         await App.GetService<IActivationService>().ActivateAsync(args);
 
-        var fpWindow = new FrontPanelWindow();
-        OtherWindows.Add("Front Panel", fpWindow);
-        var fpFrame = new Frame();
-        fpWindow.Content = fpFrame;
-        var frontPanel = GetService<FrontPanelPage>();
-        fpFrame.Content = frontPanel;
-        fpWindow.Show();
+        //var fpWindow = new FrontPanelWindow();
+        //OtherWindows.Add("Front Panel", fpWindow);
+        //var fpFrame = new Frame();
+        //fpWindow.Content = fpFrame;
+        //var frontPanel = GetService<FrontPanelPage>();
+        //fpFrame.Content = frontPanel;
+        //fpWindow.Show();
     }
 }

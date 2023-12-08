@@ -6,20 +6,17 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-
+using Windows.Foundation.Metadata;
 using Windows.System;
 
 namespace HBD8080A.Views;
 
-public sealed partial class ShellPage : Page
-{
-    public ShellViewModel ViewModel
-    {
+public sealed partial class ShellPage : Page {
+    public ShellViewModel ViewModel {
         get;
     }
 
-    public ShellPage(ShellViewModel viewModel)
-    {
+    public ShellPage(ShellViewModel viewModel) {
         ViewModel = viewModel;
         InitializeComponent();
 
@@ -34,8 +31,7 @@ public sealed partial class ShellPage : Page
         AppTitleBarText.Text = "AppDisplayName".GetLocalized();
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
+    private void OnLoaded(object sender, RoutedEventArgs e) {
         KeyboardAccelerators.Add(BuildKeyboardAccelerator(VirtualKey.Left, VirtualKeyModifiers.Menu));
         KeyboardAccelerators.Add(BuildKeyboardAccelerator(VirtualKey.GoBack));
 
@@ -43,25 +39,21 @@ public sealed partial class ShellPage : Page
         ShellMenuBarSettingsButton.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(ShellMenuBarSettingsButton_PointerReleased), true);
     }
 
-    private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
-    {
+    private void MainWindow_Activated(object sender, WindowActivatedEventArgs args) {
         var resource = args.WindowActivationState == WindowActivationState.Deactivated ? "WindowCaptionForegroundDisabled" : "WindowCaptionForeground";
 
         AppTitleBarText.Foreground = (SolidColorBrush)App.Current.Resources[resource];
     }
 
-    private void OnUnloaded(object sender, RoutedEventArgs e)
-    {
+    private void OnUnloaded(object sender, RoutedEventArgs e) {
         ShellMenuBarSettingsButton.RemoveHandler(UIElement.PointerPressedEvent, (PointerEventHandler)ShellMenuBarSettingsButton_PointerPressed);
         ShellMenuBarSettingsButton.RemoveHandler(UIElement.PointerReleasedEvent, (PointerEventHandler)ShellMenuBarSettingsButton_PointerReleased);
     }
 
-    private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null)
-    {
+    private static KeyboardAccelerator BuildKeyboardAccelerator(VirtualKey key, VirtualKeyModifiers? modifiers = null) {
         var keyboardAccelerator = new KeyboardAccelerator() { Key = key };
 
-        if (modifiers.HasValue)
-        {
+        if (modifiers.HasValue) {
             keyboardAccelerator.Modifiers = modifiers.Value;
         }
 
@@ -70,8 +62,7 @@ public sealed partial class ShellPage : Page
         return keyboardAccelerator;
     }
 
-    private static void OnKeyboardAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
+    private static void OnKeyboardAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args) {
         var navigationService = App.GetService<INavigationService>();
 
         var result = navigationService.GoBack();
@@ -79,23 +70,33 @@ public sealed partial class ShellPage : Page
         args.Handled = result;
     }
 
-    private void ShellMenuBarSettingsButton_PointerEntered(object sender, PointerRoutedEventArgs e)
-    {
+    private void ShellMenuBarSettingsButton_PointerEntered(object sender, PointerRoutedEventArgs e) {
         AnimatedIcon.SetState((UIElement)sender, "PointerOver");
     }
 
-    private void ShellMenuBarSettingsButton_PointerPressed(object sender, PointerRoutedEventArgs e)
-    {
+    private void ShellMenuBarSettingsButton_PointerPressed(object sender, PointerRoutedEventArgs e) {
         AnimatedIcon.SetState((UIElement)sender, "Pressed");
     }
 
-    private void ShellMenuBarSettingsButton_PointerReleased(object sender, PointerRoutedEventArgs e)
-    {
+    private void ShellMenuBarSettingsButton_PointerReleased(object sender, PointerRoutedEventArgs e) {
         AnimatedIcon.SetState((UIElement)sender, "Normal");
     }
 
-    private void ShellMenuBarSettingsButton_PointerExited(object sender, PointerRoutedEventArgs e)
-    {
+    private void ShellMenuBarSettingsButton_PointerExited(object sender, PointerRoutedEventArgs e) {
         AnimatedIcon.SetState((UIElement)sender, "Normal");
+    }
+
+    private void Load_Click(object sender, RoutedEventArgs e) {
+
+    }
+
+    private void Monitor_Click(object sender, RoutedEventArgs e) {
+
+    }
+
+    private void CommandBar_Loaded(object sender, RoutedEventArgs e) {
+        if (ApiInformation.IsPropertyPresent("Windows.UI.Xaml.Controls.AppBarButton", "LabelPosition")) {
+            BtnLoad.LabelPosition = CommandBarLabelPosition.Collapsed;
+        }
     }
 }
