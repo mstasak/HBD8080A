@@ -20,6 +20,10 @@
   <ItemGroup>
     <Content Remove="Assets\DrWangPaloAltoTinyBasic.retro.8080.asm" />
     <Content Remove="Assets\ImsaiFP.png" />
+    <Content Remove="Assets\PATBHelp1.jpg" />
+    <Content Remove="Assets\PATBHelp2.jpg" />
+    <Content Remove="Assets\PATBHelp3.jpg" />
+    <Content Remove="Assets\PATBHelp4.jpg" />
     <Content Remove="Assets\rockerswitches.pdn" />
   </ItemGroup>
   <ItemGroup>
