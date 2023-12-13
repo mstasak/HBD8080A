@@ -9,5 +9,5 @@
 
 ## GitHub
 
- - Rename a folder in a project be opening your project at github.dev (not .com), exploring the project, right clicking on a folder, rename the folder, commit the changes.
+ - Rename a folder in a project by opening your project at github.dev (not .com), exploring the project, right clicking on a folder, rename the folder, commit the changes.
    This seems to create a new folder and copy or move the files into it.
