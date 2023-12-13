@@ -1,5 +1,7 @@
 ﻿using HBD8080A.Contracts.Services;
+using HBD8080A.Hardware.Computer;
 using HBD8080A.Helpers;
+using HBD8080A.Services;
 using HBD8080A.ViewModels;
 
 using Microsoft.UI.Xaml;
@@ -95,8 +97,72 @@ public sealed partial class ShellPage : Page {
     }
 
     private void CommandBar_Loaded(object sender, RoutedEventArgs e) {
-        if (ApiInformation.IsPropertyPresent("Windows.UI.Xaml.Controls.AppBarButton", "LabelPosition")) {
-            BtnLoad.LabelPosition = CommandBarLabelPosition.Collapsed;
+        //if (ApiInformation.IsPropertyPresent("Windows.UI.Xaml.Controls.AppBarButton", "LabelPosition")) {
+        //    BtnLoad.LabelPosition = CommandBarLabelPosition.Collapsed;
+        //}
+    }
+
+    private void GraphicsTerm_Click(object sender, RoutedEventArgs e) {
+
+    }
+
+    private void SCS_Click(object sender, RoutedEventArgs e) {
+
+    }
+
+    private void PATB_Click(object sender, RoutedEventArgs e) {
+        //load file from static location
+        //var memory = File.ReadAllBytes("f:\\dev\\8080\\TinyB\\PaloAlto\\patb.bin");
+        var memory = HBD8080A.Resources.i8080Programs.paloaltotinybasic;
+        if (memory != null) {
+            var Computer = App.GetService<ComputerSystemService>();
+            var Cpu = Computer.Cpu;
+            //stop cpu
+            PrepareToLoad(Cpu);
+            //reset
+            //load memory
+            for (var i = 0; i < memory.Count(); i++) {
+                Cpu.Memory[i] = memory[i];
+            }
+            //start cpu
+            CpuState(Cpu, Cpu8080A.CpuState.Running);
         }
+    }
+
+    private void PrepareToLoad(Cpu8080A cpu) {
+        //if off, turn on
+        if (cpu.CurrentState == Cpu8080A.CpuState.Off) {
+            CpuState(cpu, Cpu8080A.CpuState.On);
+        }
+        //if running then stop
+        if (cpu.CurrentState == Cpu8080A.CpuState.Running || cpu.CurrentState == Cpu8080A.CpuState.Halt) {
+            CpuState(cpu, Cpu8080A.CpuState.Stopped);
+        }
+        //if on then reset
+        if (cpu.CurrentState == Cpu8080A.CpuState.On) {
+            CpuState(cpu, Cpu8080A.CpuState.Reset);
+        }
+
+        //if reset wait for not reset
+    }
+
+    private void CpuState(Cpu8080A cpu, Cpu8080A.CpuState newState) {
+        cpu.RequestedState = newState;
+        //when done, this will reset to unchanged
+        var elapsed = 0;
+        do {
+            if (cpu.RequestedState == newState) {
+                Thread.Sleep(1000);
+                elapsed++;
+            } else {
+                break;
+            }
+        } while (elapsed < 1000);
+    }
+
+    private void TTY_Click(object sender, RoutedEventArgs e) {
+        var Terminal = App.GetService<DumbTerminalService>();
+        Terminal.IsOn = this.BtnTTY.IsChecked ?? false;
+
     }
 }

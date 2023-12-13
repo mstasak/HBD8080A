@@ -80,7 +80,6 @@ public partial class App : Application
             // Views and ViewModels
             services.AddSingleton<FrontPanelViewModel>();
             services.AddTransient<TerminalViewModel>();
-            services.AddTransient<TerminalPage>();
             services.AddTransient<ShellPage>();
             services.AddTransient<ShellViewModel>();
             //services.AddTransient<MainPage>();

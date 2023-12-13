@@ -19,7 +19,6 @@ public class PageService : IPageService
         Configure<StatusViewModel, StatusPage>();
         Configure<SettingsViewModel, SettingsPage>();
         Configure<TestbedViewModel, TestbedPage>();
-        Configure<TerminalViewModel, TerminalPage>();
         Configure<MemoryViewModel, MemoryPage>();
         Configure<RegistersViewModel, RegistersPage>();
         Configure<DisAsmViewModel, DisAsmPage>();

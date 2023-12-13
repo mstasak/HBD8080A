@@ -355,7 +355,7 @@ public class FrontPanelViewModel : ObservableRecipient {
                     Cpu.RequestedState = Cpu8080A.CpuState.On;
                 }
             } else if ((e.SwitchStates & 0x04) == 0) {
-                    Cpu.RequestedState = Cpu8080A.CpuState.Off;
+                Cpu.RequestedState = Cpu8080A.CpuState.Off;
             }
 
             //}
@@ -436,16 +436,6 @@ public class FrontPanelViewModel : ObservableRecipient {
         //load file from static location
         //var memory = File.ReadAllBytes("f:\\dev\\asm80\\scs\\scs.bin");
         var memory = HBD8080A.Resources.i8080Programs.scs;
-        if (memory != null) {
-            for (var i = 0; i < memory.Count(); i++) {
-                Cpu.Memory[i] = memory[i];
-            }
-        }
-    }
-    public void PATB_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) {
-        //load file from static location
-        //var memory = File.ReadAllBytes("f:\\dev\\8080\\TinyB\\PaloAlto\\patb.bin");
-        var memory = HBD8080A.Resources.i8080Programs.paloaltotinybasic;
         if (memory != null) {
             for (var i = 0; i < memory.Count(); i++) {
                 Cpu.Memory[i] = memory[i];

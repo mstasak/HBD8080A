@@ -22,7 +22,6 @@
             <RowDefinition Height="50" />
             <RowDefinition Height="50" />
             <RowDefinition Height="50" />
-            <RowDefinition Height="50" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="610" />
@@ -77,7 +76,5 @@
         <TextBlock Grid.Row="5" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Read from keyboard and output to display</TextBlock>
         <Button Grid.Row="6" Grid.Column="0" Margin="10,0,0,0"  Click="ViewModel.SCS_Click">Self Contained System</Button>
         <TextBlock Grid.Row="6" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Load IMSAI Monitor &amp; Assembler</TextBlock>
-        <Button Grid.Row="7" Grid.Column="0" Margin="10,0,0,0"  Click="ViewModel.PATB_Click">Tiny Basic</Button>
-        <TextBlock Grid.Row="7" Grid.Column="1"  Margin="10,0,0,0" Foreground="White">Load Palo Alto Tiny Basic</TextBlock>
     </Grid>
 </Page>
