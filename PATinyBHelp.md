@@ -37,7 +37,7 @@ Enter each line with a linenumber.  Suggest using multiples of 10, so insertions
 - 
 
 ## Additional info
-See the 4 help pages captured from Dr. Dobbs Journal, in the project source under HBD8080A\Assets\PATHHelp*.jpg
+See the 4 help pages captured from Dr. Dobbs Journal, in the project source under HBD8080A\Assets\PATBHelp*.jpg
 
 ## Sample session
 ```
