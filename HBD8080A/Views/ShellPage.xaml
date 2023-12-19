@@ -38,10 +38,11 @@
                 <MenuBarItem x:Uid="ShellMenuBarItem_Views">
                     <MenuBarItem.Items>
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Main" Command="{x:Bind ViewModel.MenuViewsMainCommand}" />
-                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Status" Command="{x:Bind ViewModel.MenuViewsStatusCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Status" IsEnabled="False" Command="{x:Bind ViewModel.MenuViewsStatusCommand}" />
                         <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Memory" Command="{x:Bind ViewModel.MenuViewsMemoryCommand}" />
-                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Registers" Command="{x:Bind ViewModel.MenuViewsRegistersCommand}" />
-                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_DisAsm" Command="{x:Bind ViewModel.MenuViewsDisAsmCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_DisplayAdapter" Command="{x:Bind ViewModel.MenuViewsDisplayAdapterCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_Registers" IsEnabled="False" Command="{x:Bind ViewModel.MenuViewsRegistersCommand}" />
+                        <MenuFlyoutItem x:Uid="ShellMenuItem_Views_DisAsm" IsEnabled="False" Command="{x:Bind ViewModel.MenuViewsDisAsmCommand}" />
                         <!--<MenuFlyoutItem x:Uid="ShellMenuItem_Views_Testbed" Command="{x:Bind ViewModel.MenuViewsTestbedCommand}" />-->
                         <!--<MenuFlyoutItem x:Uid="ShellMenuItem_Views_FrontPanel" Command="{x:Bind ViewModel.MenuViewsFrontPanelCommand}" />-->
                     </MenuBarItem.Items>

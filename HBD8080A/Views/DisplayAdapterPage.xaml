@@ -1,0 +1,33 @@
+﻿<Page
+    x:Class="HBD8080A.Views.DisplayAdapterPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Loaded="Page_Loaded">
+
+    <!--<Grid x:Name="ContentArea">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            x:Uid="Status_Title"
+            Style="{StaticResource PageTitleStyle}" />
+
+        <Grid Grid.Row="1">
+            
+        </Grid>
+        
+    </Grid>-->
+    <StackPanel Orientation="Vertical">
+        <TextBlock>Display Adapter</TextBlock>
+        <Canvas x:Name="AdapterCanvas" Width="1024" Height="768" >
+            <Image x:Name="shpImage1" Source="bidirocker.png" Canvas.Left="50" Canvas.Top="250" Width="200" Height="100" Loaded="shpImage1_Loaded" />
+            <Rectangle x:Name="shpRect1" Canvas.Left="50" Canvas.Top="50" Width="200" Height="100" Fill="Yellow" />
+        </Canvas>
+    </StackPanel>
+</Page>

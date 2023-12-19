@@ -20,6 +20,7 @@ public class PageService : IPageService
         Configure<SettingsViewModel, SettingsPage>();
         Configure<TestbedViewModel, TestbedPage>();
         Configure<MemoryViewModel, MemoryPage>();
+        Configure<DisplayAdapterViewModel, DisplayAdapterPage>();
         Configure<RegistersViewModel, RegistersPage>();
         Configure<DisAsmViewModel, DisAsmPage>();
     }

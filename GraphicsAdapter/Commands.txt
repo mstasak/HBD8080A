@@ -1,0 +1,65 @@
+﻿Graphics adapter reference:
+
+Communication is bidirectional; the computer can ask the adapter things like the color of a pixel, or the screen width.
+
+The adapter functions in several modes:
+  - text mode
+  - graphics mode
+  - mixed mode
+  - perhaps layered mode (via composition), in which any layer can be one of the above modes
+  - window mode (a region of the text screen scrolls and wraps as if it were an entire screen)
+
+Command format:
+  0x01 | commandcode(1byte) | (no operand)
+  0x02 | commandcode(1byte) | operandcount(1 byte) | operand(s)
+  0x03 | commandcode(1byte) | datacount(1word) | data (datacount bytes)
+
+Command reference:
+  form code params    : purpose
+  0x01 0x01 : reset
+  0x01 0x02 : clear screen (implicit fillcolor#0)
+  0x01 0x03 : clear screen (implicit black)
+  0x02 0x04 bFILLCOLOR : clear screen (specified fillcolor#)
+  0x02 0x05 eMode : set predefined adapter mode
+                  : eMode = 1: graphics, 640Hx480Wx256C
+                  : eMode = 2: graphics, 640Hx480Wx256C, 25rowsx80cols  (approx. 19v x 8x char cells, minus char/row spacings; try 16x7?)
+                  : others TBD
+  0x02 0x06 eFont : set text rendering font to a byte enumerated code (1=help/arial, 2=times/roman, 3=courier, 4=script, 5=comic sans, 6=?, 7...)
+  : define pen (pen# 0-F, color, width)
+  : define brush (brush# 0-F, color)
+  : select pen (0-F)
+  : select brush (0-F)
+  : set bgcolor (for clear)
+  : set brushcolor (fillcolor)
+  : set pencolor (strokecolor)
+  : drawX
+  : fillX
+  : drawfilledx (point, line, rectangle, roundedrect, ellipse/circle, polygon, path, )
+  : putpixel (pos, color)
+  : getpixel (pos)
+  : putpixels (rect, data)
+  : getpixels (rect)
+  : querysetting (key)
+  : setsetting (key, value)
+  : getwidth
+  : getheight
+  : getrows
+  : getcolumns
+  : getcharpixels
+  : getcharrows
+  : getrowspacing
+  : getcolspacing
+  : setcursorpos
+  : getcursorpos
+  : setcursorshape
+  : getcursorshape
+  : hidecursor
+  : showcursor
+  : ping
+  : setdisplayparameters w,h,colors
+  : beginbatch
+  : endbatch
+
+  Initial cut will be simpler:
+   - 1B 2E 00 00                clear screen
+   - 1B 2E 01 06 xxxx yyyy px   draw pixel (256 color - r*36+g*6+b, last 40 undefined)

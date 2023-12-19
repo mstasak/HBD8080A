@@ -36,6 +36,7 @@
     <None Remove="Assets\rockerupbright.png" />
     <None Remove="Assets\rockerupdim.png" />
     <None Remove="FrontPanelWindow.xaml" />
+    <None Remove="Views\DisplayAdapterPage.xaml" />
     <None Remove="Views\FrontPanelPage.xaml" />
     <None Remove="Views\LEDRow.xaml" />
     <None Remove="Views\SwitchButtonRow.xaml" />
@@ -47,11 +48,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.3.230602002" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="KGySoft.Drawing" Version="8.0.0" />
+    <PackageReference Include="KGySoft.Drawing.WinUI" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.231115000" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
-    <PackageReference Include="WinUIEx" Version="2.2.0" />
+    <PackageReference Include="WinUIEx" Version="2.3.3" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">
@@ -62,6 +65,10 @@
     </Page>
     <Page Update="Views\FrontPanelPage.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
+    <Page Update="Views\DisplayAdapterPage.xaml">
+      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+      <SubType>Designer</SubType>
     </Page>
     <Page Update="Views\SwitchButtonRow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>

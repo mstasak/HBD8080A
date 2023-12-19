@@ -91,6 +91,8 @@ public partial class App : Application
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<MemoryPage>();
             services.AddTransient<MemoryViewModel>();
+            services.AddSingleton<DisplayAdapterPage>();
+            services.AddTransient<DisplayAdapterViewModel>();
             services.AddTransient<RegistersPage>();
             services.AddTransient<RegistersViewModel>();
             services.AddTransient<DisAsmPage>();

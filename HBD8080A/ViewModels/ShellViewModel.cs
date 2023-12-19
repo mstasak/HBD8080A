@@ -36,6 +36,10 @@ public partial class ShellViewModel : ObservableRecipient
     {
         get;
     }
+    public ICommand MenuViewsDisplayAdapterCommand
+    {
+        get;
+    }
     public ICommand MenuViewsRegistersCommand
     {
         get;
@@ -77,6 +81,7 @@ public partial class ShellViewModel : ObservableRecipient
         MenuSettingsCommand = new RelayCommand(OnMenuSettings);
         MenuViewsStatusCommand = new RelayCommand(OnMenuViewsStatus);
         MenuViewsMemoryCommand = new RelayCommand(OnMenuViewsMemory);
+        MenuViewsDisplayAdapterCommand = new RelayCommand(OnMenuViewsDisplayAdapter);
         MenuViewsRegistersCommand = new RelayCommand(OnMenuViewsRegisters);
         MenuViewsDisAsmCommand = new RelayCommand(OnMenuViewsDisAsm);
         MenuViewsMainCommand = new RelayCommand(OnMenuViewsMain);
@@ -91,6 +96,7 @@ public partial class ShellViewModel : ObservableRecipient
 
     private void OnMenuSettings() => NavigationService.NavigateTo(typeof(SettingsViewModel).FullName!);
     private void OnMenuViewsMemory() => NavigationService.NavigateTo(typeof(MemoryViewModel).FullName!);
+    private void OnMenuViewsDisplayAdapter() => NavigationService.NavigateTo(typeof(DisplayAdapterViewModel).FullName!);
     private void OnMenuViewsRegisters() => NavigationService.NavigateTo(typeof(RegistersViewModel).FullName!);
     private void OnMenuViewsDisAsm() => NavigationService.NavigateTo(typeof(DisAsmViewModel).FullName!);
 
