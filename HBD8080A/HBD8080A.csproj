@@ -25,6 +25,7 @@
     <Content Remove="Assets\PATBHelp3.jpg" />
     <Content Remove="Assets\PATBHelp4.jpg" />
     <Content Remove="Assets\rockerswitches.pdn" />
+    <Content Remove="Assets\SAMPLESCREEN.jpg" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Assets\bidirocker.png" />

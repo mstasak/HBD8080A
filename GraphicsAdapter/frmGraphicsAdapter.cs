@@ -11,8 +11,8 @@ namespace GraphicsAdapter;
 
 public partial class frmGraphicsAdapter : Form {
     internal DateTime? firstMod;
-    internal Bitmap bmp = new Bitmap(1024, 768);
-    internal TimeSpan cacheTime = new TimeSpan(10 * 150);
+    internal Bitmap bmp = new(1024, 768);
+    internal TimeSpan cacheTime = new(10 * 150);
 
     internal class GraphicsCommand {
         internal byte gCommand = 0;
@@ -72,8 +72,10 @@ public partial class frmGraphicsAdapter : Form {
             while (!GraphicsCommandQueue.IsEmpty) {
                 GraphicsCommand? cmd;
                 if (GraphicsCommandQueue.TryDequeue(out cmd)) {
-                    cmd!.PerformCommand(bmp);
+                    cmd?.PerformCommand(bmp);
                     firstMod ??= DateTime.Now;
+                } else {
+                    break;
                 }
                 commandsDone++;
                 if (commandsDone >= maxCommands) {
@@ -81,7 +83,8 @@ public partial class frmGraphicsAdapter : Form {
                 }
             }
             if (DateTime.Now - (firstMod ?? DateTime.Now) > cacheTime) {
-                picDisplayPanel.Invalidate();
+
+                picDisplayPanel.Invalidate(true);
                 firstMod = null;
             }
         } catch (Exception ex) {
@@ -90,46 +93,53 @@ public partial class frmGraphicsAdapter : Form {
 
     }
 
+    internal byte lowByte(int n) => (byte)(n & 0xff);
+    internal byte highByte(int n) => (byte)(n >> 8);
+
     private void BtnAddRandomElement_Click(object sender, EventArgs e) {
-        //using (var gr = picDisplayPanel.CreateGraphics()) {
-        //    gr.DrawRectangle(Pens.Blue, 0, 0, 5, 5);
-        //    for (var i = 0; i < 1000; i++) {
-        //        switch (Rnd(3)) {
-        //            case 0:
-        //                //gr.DrawRectangle(System.Drawing.Pens.Firebrick, 100, 100, 150, 125);
-        //                gr.DrawEllipse(RandomPen(), RandomRect());
-        //                break;
-        //            case 1:
-        //                gr.DrawRectangle(RandomPen(), RandomRect());
-        //                break;
-        //            case 3:
+        for (var i = 0; i < 10; i++) {
+            //var p = RandomPen();
+            var r = RandomRect();
+            //byte[] rectParams = { lowByte(r.X), highByte(r.X), lowByte(r.Y), highByte(r.Y), lowByte(r.Width), highByte(r.Width), lowByte(r.Height), highByte(r.Height), lowByte(Rnd(216)) };
+            //GraphicsCommandQueue.Enqueue(new GraphicsCommand() { gCommand=3, paramByteCount=9, paramBytes=rectParams});
+            byte[] pointParams = { lowByte(r.X), highByte(r.X), lowByte(r.Y), highByte(r.Y), lowByte(Rnd(216)) };
+            GraphicsCommandQueue.Enqueue(new GraphicsCommand() { gCommand = 2, paramByteCount = 5, paramBytes = pointParams });
+            //switch (Rnd(2)) {
+            //    case 0:
+            //        //gr.DrawRectangle(System.Drawing.Pens.Firebrick, 100, 100, 150, 125);
+            //        gr.DrawEllipse(RandomPen(), RandomRect());
+            //        break;
+            //    case 1:
+            //        gr.DrawRectangle(RandomPen(), RandomRect());
+            //        break;
+            //    case 3:
 
-        //                break;
-        //            default:
-        //                break;
-        //        }
-        //    }
+            //        break;
+            //    default:
+            //        break;
+            //}
+        }
+        //picDisplayPanel.Invalidate(true);
 
-        //    var img = picDisplayPanel.Image;
-        //    //var bitmap = img as Bitmap;
-        //    var bmp = gr.ToBitmap(false);
-        //    if (bmp != null) {
-        //        var c = bmp?.GetPixel(0, 0);
-        //    }
-
+        //var img = picDisplayPanel.Image;
+        ////var bitmap = img as Bitmap;
+        //var bmp = gr.ToBitmap(false);
+        //if (bmp != null) {
+        //    var c = bmp?.GetPixel(0, 0);
         //}
+
     }
-    //internal Rectangle RandomRect() {
-    //    return Rectangle.FromLTRB(Rnd(1024), Rnd(768), Rnd(1024), Rnd(768));
-    //}
-    //internal Pen RandomPen() {
-    //    var c = Color.FromArgb(Rnd(256), Rnd(256), Rnd(256));
-    //    var w = Rnd(4) + 1;
-    //    return new Pen(c, w);
-    //}
-    //internal int Rnd(int limit = 256) {
-    //    return System.Random.Shared.Next() % limit;
-    //}
+    internal Rectangle RandomRect() {
+        return Rectangle.FromLTRB(Rnd(1024), Rnd(768), Rnd(1024), Rnd(768));
+    }
+    internal Pen RandomPen() {
+        var c = Color.FromArgb(Rnd(256), Rnd(256), Rnd(256));
+        var w = Rnd(4) + 1;
+        return new Pen(c, w);
+    }
+    internal int Rnd(int limit = 256) {
+        return System.Random.Shared.Next() % limit;
+    }
 
     private void frmGraphicsAdapter_Load(object sender, EventArgs e) {
         //startup threads
@@ -142,8 +152,6 @@ public partial class frmGraphicsAdapter : Form {
         bmp.Clear(Color.Black);
         picDisplayPanel.Invalidate();
         Thread.Sleep(250); //probably unnecessary
-        timer1.Enabled = true;
-        timer1.Start();
     }
 
     internal void ShutdownThreads() {
@@ -180,7 +188,14 @@ public partial class frmGraphicsAdapter : Form {
 
         using var pipeServerKB = new NamedPipeClientStream(".", "graphicsterminalkeyboardpipe", PipeDirection.Out);
         try {
-            pipeServerKB.Connect();
+            while (!QuitRequested) {
+                try {
+                    pipeServerKB.Connect(100);
+                } catch { }
+                if (pipeServerKB.IsConnected) {
+                    break;
+                }
+            }
             //Console.WriteLine("Client connected on thread[{0}].", threadId);
             while (!QuitRequested) {
                 //try to collect input from kb
@@ -227,7 +242,14 @@ public partial class frmGraphicsAdapter : Form {
 
         using var pipeServerDisplayResponse = new NamedPipeClientStream(".", "graphicsterminalfromdisplaypipe", PipeDirection.Out);
         try {
-            pipeServerDisplayResponse.Connect();
+            while (!QuitRequested) {
+                try {
+                    pipeServerDisplayResponse.Connect(100);
+                } catch { }
+                if (pipeServerDisplayResponse.IsConnected) {
+                    break;
+                }
+            }
             //Console.WriteLine("Client connected on thread[{0}].", threadId);
             while (!QuitRequested) {
                 //try to collect input from kb
@@ -263,7 +285,14 @@ public partial class frmGraphicsAdapter : Form {
         using var pipeServerDisplay = new NamedPipeClientStream(".", "graphicsterminaltodisplaypipe", PipeDirection.In);
         try {
             // Wait for a client to connect
-            pipeServerDisplay.Connect();
+            while (!QuitRequested) {
+                try {
+                    pipeServerDisplay.Connect(100);
+                } catch { }
+                if (pipeServerDisplay.IsConnected) {
+                    break;
+                }
+            }
             //pipeServerDisplay.ReadMode = PipeTransmissionMode.Byte; *** causes immediate app close (probably throws an exception)
             //Console.WriteLine("Client connected on thread[{0}].", threadId);
             GraphicsCommand cmd = new();
@@ -384,22 +413,25 @@ public partial class frmGraphicsAdapter : Form {
         timer1.Enabled = true;
     }
 
-
-    private void frmGraphicsAdapter_OnPaint(object sender, PaintEventArgs e) {
-        //var gr = picDisplayPanel.CreateGraphics();
-        var gr = e.Graphics;
-        try {
-            gr.DrawImage(bmp, 0, 0, 1024, 768);
-        } catch (Exception) {
-        } finally { 
-            //gr.Dispose();
-        }
-    }
     private void frmGraphicsAdapter_KeyPress(object sender, KeyPressEventArgs e) {
         //queue up for send to emulator host
         var kc = e.KeyChar;
         KeypressQueue.Enqueue(kc);
         e.Handled = true;
+    }
+
+    private void picDisplayPanel_Paint(object sender, PaintEventArgs e) {
+
+    }
+
+    private void picDisplayPanel_Paint_1(object sender, PaintEventArgs e) {
+        var gr = e.Graphics;
+        try {
+            gr.DrawImage(bmp, 0, 0, 1024, 768);
+        } catch (Exception) {
+        } finally {
+            //gr.Dispose();
+        }
     }
 }
 
