@@ -44,7 +44,7 @@ Next goals (in no particular order, any or all may never be completed):
 - CPM/80
 
 ![SAMPLESCREEN](https://github.com/mstasak/HBD8080A/assets/39843617/87e6b6c5-9a8d-4a45-b50f-dd74f0d62bcc)
-
+(in project at https://github.com/mstasak/HBD8080A/blob/master/HBD8080A/Assets/SAMPLESCREEN.jpg)
 
 
 
