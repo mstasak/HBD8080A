@@ -8,21 +8,36 @@ using Newtonsoft.Json.Linq;
 namespace HBD8080A.Hardware.Computer;
 public class Cpu8080A {
 
-    public static readonly byte TTY_STATUS_PORT = 0x03;
     public static readonly byte TTY_DATA_INPUT_PORT = 0x02;
     public static readonly byte TTY_DATA_OUTPUT_PORT = 0x02;
+    public static readonly byte TTY_STATUS_PORT = 0x03;
     public static readonly byte TTY_STATUS_OUTPUT_READY_MASK = 0x01;
     public static readonly byte TTY_STATUS_INPUT_READY_MASK = 0x02;
+
+    public static readonly byte GA_DATA_INPUT_PORT = 0x12;
+    public static readonly byte GA_DATA_OUTPUT_PORT = 0x12;
+    public static readonly byte GA_KB_INPUT_PORT = 0x13;
+    public static readonly byte GA_STATUS_PORT = 0x14;
+    public static readonly byte GA_STATUS_OUTPUT_READY_MASK = 0x01;
+    public static readonly byte GA_STATUS_DATA_INPUT_READY_MASK = 0x02;
+    public static readonly byte GA_STATUS_KB_INPUT_READY_MASK = 0x04;
 
     public DispatcherQueue? AppUIDispatcherQueue {
         get;
     }
 
     private DumbTerminalService? terminal = null;
+    private DisplayAdapterService? displayAdapter = null;
     public DumbTerminalService Terminal {
         get {
             terminal ??= App.GetService<DumbTerminalService>();
             return terminal;
+        }
+    }
+    public DisplayAdapterService DisplayAdapter {
+        get {
+            displayAdapter ??= App.GetService<DisplayAdapterService>();
+            return displayAdapter;
         }
     }
     public Cpu8080A(DispatcherQueue? AppUIDispatcherQueue) {
@@ -2021,6 +2036,10 @@ public class Cpu8080A {
             Terminal.WriteChar((char)value);
             return;
         }
+        if (port == GA_DATA_OUTPUT_PORT) {
+            DisplayAdapter.WriteByte(value);
+            return;
+        }
         
         OutputPortValueSetCallback? outputAction;
 
@@ -2089,6 +2108,31 @@ public class Cpu8080A {
             }
             return ttyStatus;
         }
+
+        //graphics adapter port
+        if (port == GA_DATA_INPUT_PORT) { //dumbterminal keyboard input
+            var ch = DisplayAdapter.ReadKBChar();
+            if (ch != null) {
+                return (byte)ch;
+            } else {
+                return 0; //maybe should change type to int and return -1 when "not ready"?
+            }
+        }
+        if (port == GA_STATUS_PORT) { //dumbterminal status port
+            byte gaStatus = 0x00;
+            if (DisplayAdapter.IsOn) {
+                gaStatus |= GA_STATUS_OUTPUT_READY_MASK; // display is ready for output
+                if (DisplayAdapter.KBHit()) {
+                    gaStatus |= GA_STATUS_KB_INPUT_READY_MASK;  // a keystroke is waiting
+                }
+                if (DisplayAdapter.GADataReady()) {
+                    gaStatus |= GA_STATUS_DATA_INPUT_READY_MASK;  // a keystroke is waiting
+                }
+            }
+            return gaStatus;
+        }
+
+
         byte inputValue = 0xff;
         //if (Inputter is not null) {
         //    if (AppUIDispatcherQueue is not null) {

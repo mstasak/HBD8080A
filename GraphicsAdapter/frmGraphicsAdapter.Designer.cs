@@ -109,6 +109,7 @@ partial class frmGraphicsAdapter {
         picDisplayPanel.Size = new Size(1024, 768);
         picDisplayPanel.TabIndex = 0;
         picDisplayPanel.TabStop = false;
+        picDisplayPanel.Click += BtnAddRandomElement_Click;
         // 
         // toolStrip1
         // 
@@ -391,9 +392,11 @@ partial class frmGraphicsAdapter {
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1024, 823);
         Controls.Add(toolStripContainer1);
+        KeyPreview = true;
         Name = "frmGraphicsAdapter";
         Text = "Form1";
         Load += frmGraphicsAdapter_Load;
+        KeyPress += frmGraphicsAdapter_KeyPress;
         toolStripContainer1.ContentPanel.ResumeLayout(false);
         toolStripContainer1.TopToolStripPanel.ResumeLayout(false);
         toolStripContainer1.TopToolStripPanel.PerformLayout();

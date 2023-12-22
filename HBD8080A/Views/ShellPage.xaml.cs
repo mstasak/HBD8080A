@@ -102,10 +102,6 @@ public sealed partial class ShellPage : Page {
         //}
     }
 
-    private void GraphicsTerm_Click(object sender, RoutedEventArgs e) {
-
-    }
-
     private void SCS_Click(object sender, RoutedEventArgs e) {
 
     }
@@ -165,4 +161,11 @@ public sealed partial class ShellPage : Page {
         Terminal.IsOn = this.BtnTTY.IsChecked ?? false;
 
     }
+
+    private void GraphicsTerm_Click(object sender, RoutedEventArgs e) {
+        var display = App.GetService<DisplayAdapterService>();
+        display.IsOn = this.BtnGraphicsTerm.IsChecked ?? false;
+
+    }
+
 }

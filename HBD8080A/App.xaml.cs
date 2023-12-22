@@ -69,6 +69,7 @@ public partial class App : Application
                 _ = DumbTerminalService.Instance;
             }
             services.AddSingleton(DumbTerminalService.Instance);
+            services.AddSingleton(DisplayAdapterService.Instance);
             //services.AddSingleton(FrontPanelDataService.Instance);
 
             // Core Services

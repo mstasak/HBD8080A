@@ -15,6 +15,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DumbTerminal", "DumbTerminal\DumbTerminal.csproj", "{D3641B26-6E99-4910-88B9-5A7F836E398C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HBD8080A", "HBD8080A\HBD8080A.csproj", "{1D079D7F-9B1E-481F-8053-7350DBDEA40D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{29DBF1B8-D4E1-4CF7-8B18-4E733D1BC768} = {29DBF1B8-D4E1-4CF7-8B18-4E733D1BC768}
+		{D3641B26-6E99-4910-88B9-5A7F836E398C} = {D3641B26-6E99-4910-88B9-5A7F836E398C}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HBD8080A.Core", "HBD8080A.Core\HBD8080A.Core.csproj", "{CF20ADAB-0562-4C29-BA58-72B08052F637}"
 EndProject
@@ -107,9 +111,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{29DBF1B8-D4E1-4CF7-8B18-4E733D1BC768} = {55F48EAE-0D43-4CE5-8376-2D616434D34D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5C164AD5-A23B-44BB-88B2-63960D59D3B7}
