@@ -1,5 +1,5 @@
 using System.Drawing.Configuration;
-using KGySoft.Drawing;
+//using KGySoft.Drawing;
 using System.IO.Pipes;
 using System.Xml;
 using Microsoft.VisualBasic;
@@ -13,46 +13,6 @@ public partial class frmGraphicsAdapter : Form {
     internal DateTime? firstMod;
     internal Bitmap bmp = new(1024, 768);
     internal TimeSpan cacheTime = new(10 * 150);
-
-    internal class GraphicsCommand {
-        internal byte gCommand = 0;
-        internal int paramByteCount = 0;
-        internal byte[]? paramBytes;
-        internal int paramIx = 0;
-
-        internal void PerformCommand(Bitmap bmp) {
-            try {
-                switch (gCommand) {
-                    case 1: //clear screen
-                        bmp.Clear(Color.Black);
-                        break;
-                    case 2: //set pixel
-                        if (paramByteCount == 5) {
-                            var x = pWord();
-                            var y = pWord();
-                            var c = pColor();
-                            bmp.SetPixel(x, y, c);
-                        }
-                        break;
-                }
-            } catch (Exception ex) {
-                Debug.WriteLine($"Exception in GraphicsCommand.PerformCommand: {ex.Message}");
-            }
-        }
-
-        internal int pWord() {
-            return paramBytes[paramIx++] | paramBytes[paramIx++] << 8;
-        }
-        internal byte pByte() {
-            return paramBytes[paramIx++];
-        }
-        internal Color pColor() {
-            var rawC = pByte();
-            return Color.FromArgb(rawC / 36 * 255 / 6, rawC / 6 % 6 * 255 / 6, rawC % 6 * 255 / 6);
-        }
-
-    }
-
 
     internal bool QuitRequested { get; set; } = false;
     internal Thread? clientKBSend;
@@ -93,8 +53,8 @@ public partial class frmGraphicsAdapter : Form {
 
     }
 
-    internal byte lowByte(int n) => (byte)(n & 0xff);
-    internal byte highByte(int n) => (byte)(n >> 8);
+    internal static byte LowByte(int n) => (byte)(n & 0xff);
+    internal static byte HighByte(int n) => (byte)(n >> 8);
 
     private void BtnAddRandomElement_Click(object sender, EventArgs e) {
         for (var i = 0; i < 10; i++) {
@@ -102,7 +62,7 @@ public partial class frmGraphicsAdapter : Form {
             var r = RandomRect();
             //byte[] rectParams = { lowByte(r.X), highByte(r.X), lowByte(r.Y), highByte(r.Y), lowByte(r.Width), highByte(r.Width), lowByte(r.Height), highByte(r.Height), lowByte(Rnd(216)) };
             //GraphicsCommandQueue.Enqueue(new GraphicsCommand() { gCommand=3, paramByteCount=9, paramBytes=rectParams});
-            byte[] pointParams = { lowByte(r.X), highByte(r.X), lowByte(r.Y), highByte(r.Y), lowByte(Rnd(216)) };
+            byte[] pointParams = { LowByte(r.X), HighByte(r.X), LowByte(r.Y), HighByte(r.Y), LowByte(Rnd(216)) };
             GraphicsCommandQueue.Enqueue(new GraphicsCommand() { gCommand = 2, paramByteCount = 5, paramBytes = pointParams });
             //switch (Rnd(2)) {
             //    case 0:
@@ -149,8 +109,9 @@ public partial class frmGraphicsAdapter : Form {
         clientDisplaySend?.Start();
         clientDisplayReceive = new Thread(ClientThreadDisplayReceive);
         clientDisplayReceive?.Start();
-        bmp.Clear(Color.Black);
-        picDisplayPanel.Invalidate();
+        //bmp.Clear(Color.Black);
+        //picDisplayPanel.Invalidate();
+        GraphicsCommandQueue.Enqueue(new GraphicsCommand() { gCommand = 1 });
         Thread.Sleep(250); //probably unnecessary
     }
 
@@ -215,18 +176,22 @@ public partial class frmGraphicsAdapter : Form {
                         if (c == '\x1A') {
                             QuitRequested = true;
                         } else {
-                            pipeServerKB.WriteByte((byte)c);
+                            if (pipeServerKB.IsConnected && pipeServerKB.CanWrite) {
+                                pipeServerKB.WriteByte((byte)c);
+                            } else {
+                                break; //output pipe broken, close thread and start shutdown
+                            }
                         }
                     }
                 }
             }
         } catch (TimeoutException e) {
             //could do something to notify user, ask whether to retry, etc.
-            Debug.WriteLine($"Exception in ClientThreadKBSend: {e.Message}");
+            Debug.WriteLine($"TimeoutException in ClientThreadKBSend: {e.Message}");
         } catch (IOException e) {
             // Catch the IOException that is raised if the pipe is broken
             // or disconnected.
-            Debug.WriteLine($"Exception in ClientThreadKBSend: {e.Message}");
+            Debug.WriteLine($"IOException in ClientThreadKBSend: {e.Message}");
             Console.WriteLine("ERROR: {0}\nPress Enter to close.", e.Message);
             Console.ReadLine();
         } finally {
@@ -275,7 +240,7 @@ public partial class frmGraphicsAdapter : Form {
         }
     }
 
-    internal enum cmdReadState {
+    internal enum CmdReadState {
         GetEsc, GetPeriod, GetCommandCode, GetParamsSize, GetParamsSizeExLow, GetParamsSizeExHigh, GetParams, GotCmd
     }
     internal void ClientThreadDisplayReceive(object? data) {
@@ -297,11 +262,11 @@ public partial class frmGraphicsAdapter : Form {
             //Console.WriteLine("Client connected on thread[{0}].", threadId);
             GraphicsCommand cmd = new();
             var ParamsBytesRead = 0;
-            cmdReadState CRState = cmdReadState.GetEsc;
+            CmdReadState CRState = CmdReadState.GetEsc;
             var cmdSetter = new cmdEnqueuer(enqueueCommand);
             int charCode;
             while (!QuitRequested && pipeServerDisplay.IsConnected) {
-                if (CRState != cmdReadState.GotCmd) {
+                if (CRState != CmdReadState.GotCmd) {
                     charCode = pipeServerDisplay.ReadByte();
                 } else {
                     charCode = 0;
@@ -314,65 +279,65 @@ public partial class frmGraphicsAdapter : Form {
                     //GraphicsCommandQueue.Enqueue((byte)charCode);
                     //assemble command to enqueue
                     switch (CRState) {
-                        case cmdReadState.GetEsc:
+                        case CmdReadState.GetEsc:
                             if (charCode == 27) {
-                                CRState = cmdReadState.GetPeriod;
+                                CRState = CmdReadState.GetPeriod;
                                 cmd = new();
                             } else {
                                 //we are out of sync, so discard byte and wait for Esc char
                             }
                             break;
-                        case cmdReadState.GetPeriod:
+                        case CmdReadState.GetPeriod:
                             if (charCode == (byte)'.') {
-                                CRState = cmdReadState.GetCommandCode;
+                                CRState = CmdReadState.GetCommandCode;
                             } else {
                                 //lost sync, wait for Esc+'.'
-                                CRState = cmdReadState.GetEsc;
+                                CRState = CmdReadState.GetEsc;
                             }
                             break;
-                        case cmdReadState.GetCommandCode:
+                        case CmdReadState.GetCommandCode:
                             cmd.gCommand = (byte)charCode;
-                            CRState = cmdReadState.GetParamsSize;
+                            CRState = CmdReadState.GetParamsSize;
                             ParamsBytesRead = 0;
                             break;
-                        case cmdReadState.GetParamsSize:
+                        case CmdReadState.GetParamsSize:
                             if (charCode == 255) {
-                                CRState = cmdReadState.GetParamsSizeExLow;
+                                CRState = CmdReadState.GetParamsSizeExLow;
                             } else {
                                 cmd.paramByteCount = charCode;
-                                CRState = cmdReadState.GetParams;
+                                CRState = CmdReadState.GetParams;
                             }
                             break;
-                        case cmdReadState.GetParamsSizeExLow:
+                        case CmdReadState.GetParamsSizeExLow:
                             cmd.paramByteCount = charCode;
-                            CRState = cmdReadState.GetParamsSizeExHigh;
+                            CRState = CmdReadState.GetParamsSizeExHigh;
                             break;
-                        case cmdReadState.GetParamsSizeExHigh:
+                        case CmdReadState.GetParamsSizeExHigh:
                             cmd.paramByteCount |= charCode << 8;
-                            CRState = cmdReadState.GetParams;
+                            CRState = CmdReadState.GetParams;
                             break;
-                        case cmdReadState.GetParams:
+                        case CmdReadState.GetParams:
                             if (cmd.paramByteCount == 0) {
-                                CRState = cmdReadState.GotCmd;
+                                CRState = CmdReadState.GotCmd;
                             } else {
                                 if (ParamsBytesRead == 0) {
                                     cmd.paramBytes = new byte[cmd.paramByteCount];
                                 }
                                 cmd.paramBytes[ParamsBytesRead++] = (byte)charCode;
                                 if (ParamsBytesRead == cmd.paramByteCount) {
-                                    CRState = cmdReadState.GotCmd;
+                                    CRState = CmdReadState.GotCmd;
                                 }
                             }
                             break;
-                        case cmdReadState.GotCmd:
+                        case CmdReadState.GotCmd:
                             break;
                     }
-                    if (CRState == cmdReadState.GotCmd) {
+                    if (CRState == CmdReadState.GotCmd) {
                         //GraphicsCommandQueue.Enqueue(cmd); //unsafe!()
 
                         picDisplayPanel.Invoke(cmdSetter, new object[] { cmd });
 
-                        CRState = cmdReadState.GetEsc;
+                        CRState = CmdReadState.GetEsc;
                     }
                 }
             }
@@ -421,10 +386,6 @@ public partial class frmGraphicsAdapter : Form {
     }
 
     private void picDisplayPanel_Paint(object sender, PaintEventArgs e) {
-
-    }
-
-    private void picDisplayPanel_Paint_1(object sender, PaintEventArgs e) {
         var gr = e.Graphics;
         try {
             gr.DrawImage(bmp, 0, 0, 1024, 768);

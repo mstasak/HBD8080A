@@ -7,13 +7,14 @@ using Newtonsoft.Json.Linq;
 
 namespace HBD8080A.Hardware.Computer;
 public class Cpu8080A {
-
+    //port numbers and bitmasks for dumb terminal interface
     public static readonly byte TTY_DATA_INPUT_PORT = 0x02;
     public static readonly byte TTY_DATA_OUTPUT_PORT = 0x02;
     public static readonly byte TTY_STATUS_PORT = 0x03;
     public static readonly byte TTY_STATUS_OUTPUT_READY_MASK = 0x01;
     public static readonly byte TTY_STATUS_INPUT_READY_MASK = 0x02;
 
+    //port numbers and bitmasks for grapgics terminal interface
     public static readonly byte GA_DATA_INPUT_PORT = 0x12;
     public static readonly byte GA_DATA_OUTPUT_PORT = 0x12;
     public static readonly byte GA_KB_INPUT_PORT = 0x13;

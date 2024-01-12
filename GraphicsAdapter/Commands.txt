@@ -2,6 +2,28 @@
 
 Communication is bidirectional; the computer can ask the adapter things like the color of a pixel, or the screen width.
 
+So far:
+The display is a winforms app.  It communicates with the emulator using 3 unidirectional named pipes: keyboard input, display output, and display input (response data).
+Of these, so far I am only using display output.
+
+Two commands are implemented, using sequences of bytes somewhat like terminal escape sequences:
+
+    1. Clear screen (black): new byte[] {0x1B, (byte)'.', 1, 0)  (or $"{Esc}.{ClearCommand}\0")
+
+    2. Draw pixel:           new byte[] {0x1B, (byte)'.', 2, 5, Xlowbyte, Xhighbyte, Ylowbyte, Yhighbyte, Colorbyte)
+
+So the structure of a command is Escape + '.' + CommandCodeByte + ParameterCountByte + ParameterDataBytes
+A command with more than 254 parameter bytes adds a word parameter count: Escape + '.' + CommandCodeByte + 255 + ParameterCountLowByte + ParameterCountHighByte + ParameterDataBytes
+
+The display is set at 1024 x 768 x 216 colors. 
+Each color channel is a value from 0-5; 6*6*6 = 216; byte Color(byte red, byte green, byte blue) => red * 36 + green * 6 + blue
+
+Immediate Plans: code cleanup, implement typical drawing commands (line, rect, polyg, text, circle/ellipse, pieslice, maybe gradients?, maybe bitmaps), implement lower resolutions
+
+
+
+Long term design plan (changes likely!)
+
 The adapter functions in several modes:
   - text mode
   - graphics mode
@@ -10,20 +32,23 @@ The adapter functions in several modes:
   - window mode (a region of the text screen scrolls and wraps as if it were an entire screen)
 
 Command format:
-  0x01 | commandcode(1byte) | (no operand)
-  0x02 | commandcode(1byte) | operandcount(1 byte) | operand(s)
-  0x03 | commandcode(1byte) | datacount(1word) | data (datacount bytes)
+  Esc + '.' + commandcode(1byte) + operandcount=0 (1 byte) (no operand)
+  Esc + '.' + commandcode(1byte) + operandcount in [1..127] (1 byte) + (operand bytes)
+  Esc + '.' + commandcode(1byte) + ((operandcount-128) OR 0x8000) in [0x8000..0xFFFF] (word, big-endian) + (operand bytes) Note: this is a bit complex but shortens long commands a byte (is it worth it?)
 
 Command reference:
-  form code params    : purpose
-  0x01 0x01 : reset
-  0x01 0x02 : clear screen (implicit fillcolor#0)
-  0x01 0x03 : clear screen (implicit black)
-  0x02 0x04 bFILLCOLOR : clear screen (specified fillcolor#)
-  0x02 0x05 eMode : set predefined adapter mode
-                  : eMode = 1: graphics, 640Hx480Wx256C
-                  : eMode = 2: graphics, 640Hx480Wx256C, 25rowsx80cols  (approx. 19v x 8x char cells, minus char/row spacings; try 16x7?)
-                  : others TBD
+  code params    : purpose
+  0x00: reset
+  0x01: clear screen (implicit black)
+  0x02: clear screen to specified color 
+  0x03: set mode to preset
+  0x04: set mode to custom w, h, cdepth, bTextTerminalMode
+  set clip region
+  enable/disable clip region
+  set wrap mode
+  set fontname, style, size
+
+
   0x02 0x06 eFont : set text rendering font to a byte enumerated code (1=help/arial, 2=times/roman, 3=courier, 4=script, 5=comic sans, 6=?, 7...)
   : define pen (pen# 0-F, color, width)
   : define brush (brush# 0-F, color)
@@ -39,6 +64,8 @@ Command reference:
   : getpixel (pos)
   : putpixels (rect, data)
   : getpixels (rect)
+  : drawtext (string, size, rectangle, clip, wrap)
+  : consoleprinttext (scrolls screen if crlf encountered on (or near?) bottom row)
   : querysetting (key)
   : setsetting (key, value)
   : getwidth
@@ -61,5 +88,76 @@ Command reference:
   : endbatch
 
   Initial cut will be simpler:
-   - 1B 2E 00 00                clear screen
-   - 1B 2E 01 06 xxxx yyyy px   draw pixel (256 color - r*36+g*6+b, last 40 undefined)
+   - 1B 2E 01 00                   clear screen (black)
+   - 1B 2E 02 06 xxxx yyyy color   draw pixel (256 color - r*36+g*6+b, last 40 undefined)
+
+Full Command Set (in progress)
+
+COMMAND  PARAMBYTECOUNT  PARAMS             RESPONSE  DESCRIPTION
+
+-general input/output-
+
+01 clearscreen()  ;uses currentbrush
+
+10 drawpixel(x,y,color)
+11 drawpixel(x,y) ;uses CurrentPen.color
+
+20  drawpoint(x,y,color,strokewidth)
+21  drawpoint(x,y); uses currentpen
+
+30  drawline(x1,y1,x2,y2,color,strokewidth)
+31  drawline(x1,y1,x2,y2,[implied currentpen])
+32  drawline(x1,y1,r,theta,color,strokewidth)
+33  drawline(x1,y1,r,theta,[implied currentpen])
+
+40  drawrect(x,y,w,h,bordercolor,strokewidth)
+41  drawfilledrect(x,y,w,h,bordercolor,strokewidth,fillcolor)
+42  fillrect(x,y,w,h,fillcolor)
+43  drawrect(x,y,w,h,[implied currentpen])
+44  drawfilledrect(x,y,w,h,[implied currentpen],[implied currentbrush])
+45  fillrect(x,y,w,h,[implied currentbrush])
+
+50  drawroundedrect(x,y,w,h,bordercolor,strokewidth,cornerradius)
+51  drawroundedfilledrect(x,y,w,h,bordercolor,strokewidth,fillcolor,cornerradius)
+52  fillroundedrect(x,y,w,h,fillcolor,cornerradius)
+53  drawroundedrect(x,y,w,h,[implied currentpen],cornerradius)
+54  drawfilledroundedrect(x,y,w,h,[implied currentpen],[implied currentbrush],cornerradius)
+55  fillroundedrect(x,y,w,h,[implied currentbrush],cornerradius)
+
+-graphical input/output-
+nn       4               X,Y                C         Read pixel color at X,Y; sends back one byte
+
+                                                      Drawfilledx (ellipse/circle, polygon, path, )
+                                                      Drawtext (string, size, rectangle, clip, wrap)
+                                                      Putpixels (rect, data)
+                                                      Getpixels (rect)
+                                                      Getwidth
+                                                      Getheight
+                                                      Define pen (pen# 0-F, color, width)
+                                                      Define brush (brush# 0-F, color)
+                                                      Select pen (0-F)
+                                                      Select brush (0-F)
+                                                      Beginbatch
+                                                      Endbatch
+
+-terminal-style text output-
+  : consoleprinttext (scrolls screen if crlf encountered on (or near?) bottom row)
+  : setcursorpos
+  : home
+  : getcursorpos
+  : setcursorshape
+  : getcursorshape
+  : hidecursor
+  : showcursor
+  : getrows
+  : getcolumns
+
+-configuration
+  : querysetting (key)
+  : setsetting (key, value)
+  : ping
+  : setdisplayparameters w,h,colors
+  : getrowspacing
+  : getcolspacing
+  : getcharpixels (monospaced char cell dimensions for terminal font)
+  : set text rendering font to a byte enumerated code (1=help/arial, 2=times/roman, 3=courier, 4=script, 5=comic sans, 6=?, 7...)

@@ -11,6 +11,8 @@ namespace HBD8080A.Services;
 
 
 public sealed class DisplayAdapterService {
+
+    //lazy singleton implementation
     private static readonly Lazy<DisplayAdapterService> lazy =
         new(() => new DisplayAdapterService());
 

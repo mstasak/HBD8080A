@@ -109,7 +109,7 @@ partial class frmGraphicsAdapter {
         picDisplayPanel.Size = new Size(1024, 768);
         picDisplayPanel.TabIndex = 0;
         picDisplayPanel.TabStop = false;
-        picDisplayPanel.Paint += picDisplayPanel_Paint_1;
+        picDisplayPanel.Paint += picDisplayPanel_Paint;
         // 
         // toolStrip1
         // 
@@ -155,7 +155,7 @@ partial class frmGraphicsAdapter {
         // 
         modeToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { text25x80ToolStripMenuItem, text43x80ToolStripMenuItem, text50x80ToolStripMenuItem, text50x132ToolStripMenuItem, x200ToolStripMenuItem, x200ToolStripMenuItem1, x400ToolStripMenuItem, x480ToolStripMenuItem, x600ToolStripMenuItem, x768ToolStripMenuItem, x1024ToolStripMenuItem, x1200ToolStripMenuItem, x1600ToolStripMenuItem, x768ToolStripMenuItem1, x1080ToolStripMenuItem, x2160ToolStripMenuItem });
         modeToolStripMenuItem.Name = "modeToolStripMenuItem";
-        modeToolStripMenuItem.Size = new Size(224, 26);
+        modeToolStripMenuItem.Size = new Size(137, 26);
         modeToolStripMenuItem.Text = "Mode";
         // 
         // text25x80ToolStripMenuItem
@@ -258,7 +258,7 @@ partial class frmGraphicsAdapter {
         // 
         colorsToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem4, toolStripMenuItem5, mToolStripMenuItem, bitRGBAToolStripMenuItem });
         colorsToolStripMenuItem.Name = "colorsToolStripMenuItem";
-        colorsToolStripMenuItem.Size = new Size(224, 26);
+        colorsToolStripMenuItem.Size = new Size(137, 26);
         colorsToolStripMenuItem.Text = "Colors";
         // 
         // toolStripMenuItem2
@@ -301,7 +301,7 @@ partial class frmGraphicsAdapter {
         // 
         paletteToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { monochromeWhiteToolStripMenuItem, monochromeGreenToolStripMenuItem, monochromeAmberToolStripMenuItem, cGA1ToolStripMenuItem, cGA2ToolStripMenuItem, vGA256ToolStripMenuItem, highcolorToolStripMenuItem, trueColor24BitToolStripMenuItem, rGBA32BitToolStripMenuItem });
         paletteToolStripMenuItem.Name = "paletteToolStripMenuItem";
-        paletteToolStripMenuItem.Size = new Size(224, 26);
+        paletteToolStripMenuItem.Size = new Size(137, 26);
         paletteToolStripMenuItem.Text = "Palette";
         // 
         // monochromeWhiteToolStripMenuItem
@@ -361,23 +361,23 @@ partial class frmGraphicsAdapter {
         // toolStripSeparator2
         // 
         toolStripSeparator2.Name = "toolStripSeparator2";
-        toolStripSeparator2.Size = new Size(221, 6);
+        toolStripSeparator2.Size = new Size(134, 6);
         // 
         // resetToolStripMenuItem
         // 
         resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-        resetToolStripMenuItem.Size = new Size(224, 26);
+        resetToolStripMenuItem.Size = new Size(137, 26);
         resetToolStripMenuItem.Text = "Reset";
         // 
         // toolStripSeparator1
         // 
         toolStripSeparator1.Name = "toolStripSeparator1";
-        toolStripSeparator1.Size = new Size(221, 6);
+        toolStripSeparator1.Size = new Size(134, 6);
         // 
         // exitToolStripMenuItem
         // 
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(224, 26);
+        exitToolStripMenuItem.Size = new Size(137, 26);
         exitToolStripMenuItem.Text = "Exit";
         // 
         // timer1
