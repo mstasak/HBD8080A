@@ -43,9 +43,8 @@ Next goals (in no particular order, any or all may never be completed):
 - fix up SCS to accept mixed case text, implement resequence and autonumber editing aids and a simple help screen.
 - CPM/80
 
-![image](https://github.com/mstasak/MFComputer/assets/39843617/fe0ce289-b7da-4ed7-814a-4bbbf9c7bebb)
-
-
+![SAMPLESCREEN](https://github.com/mstasak/HBD8080A/assets/39843617/87e6b6c5-9a8d-4a45-b50f-dd74f0d62bcc)
+(in project at https://github.com/mstasak/HBD8080A/blob/master/HBD8080A/Assets/SAMPLESCREEN.jpg)
 
 
 
