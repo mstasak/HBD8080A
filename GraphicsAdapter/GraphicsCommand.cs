@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,7 +24,7 @@ internal class GraphicsCommand {
         //gcDrawLineXYWHColorStrokeWidthRounded,
         gcDrawLineXYRTheta,
         //gcDrawLineXYRThetaColorStrokeWidthRounded,
-        gcDrawRectXYWH,
+        gcDrawRectXYWH = 30,
         gcFillRectXYWH,
         //gcDrawRectXYWHColorStrokeWidthRounded,
         gcDrawFillRectXYWH, //current pen, brush
@@ -31,15 +32,28 @@ internal class GraphicsCommand {
         //gcDrawFillRectXYWHFillColor, //current pen
         //gcDrawFillRectXYWHColorStrokeWidthRoundedFillColor, //pen, brush specified
         gcDrawRoundedRectXYWHCornerRadius,
-        gcDrawFillRoundedRectXYWHCornerRadius,
+        gcDrawFillRoundedRectXYWHCornerRadius = 40,
         gcFillRoundedRectXYWHCornerRadius,
         //gcDrawRoundedRectXYWHColorStrokeWidthRounded,
         //gcDrawFillRoundedRectXYWH, //current pen, brush
         //gcDrawFillRoundedRectXYWHColorStrokeWidthRounded, //current brush
         //gcDrawFillRoundedRectXYWHFillColor, //current pen
         //gcDrawFillRoundedRectXYWHColorStrokeWidthRoundedFillColor, //pen, brush specified
+        gcDrawCircle = 50,
+        gcDrawEllipse = 60,
+        gcDrawPolygon = 70,
+        gcDrawArc = 80,
+        gcDrawBezier = 90,
+        gcSetPen = 100,
+        gcSetBrush = 110,
+        gcSetForegroundColor = 120,
+        gcSetBackgroundColor = 130,
+        gcSetScreenDimensions = 140,
+        gcSetZoom = 150,
+        gcScrollRegion = 160,
+        gcScrollScreen = 170,
 
-        gcDrawText, //nStringText, nStringFont, wPointSize, bStyles (bold,italic,underline,strike,superscript,subscript,invert,color,bgcolor,bclearfirst)
+        gcDrawText = 200, //nStringText, nStringFont, wPointSize, bStyles (bold,italic,underline,strike,superscript,subscript,invert,color,bgcolor,bclearfirst)
         /*
 
         -graphical input/output-
@@ -127,6 +141,71 @@ internal class GraphicsCommand {
                         } finally {
                             g?.Dispose();
                         }
+                    }
+                    break;
+                case GCommandCode.gcDrawRectXYWH:
+                    if (paramByteCount == 8) {
+                        Rectangle r = new(pWord(), pWord(), pWord(), pWord());
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRectangle(GraphicsState.CurrentPen, r);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+                case GCommandCode.gcFillRectXYWH:
+                    if (paramByteCount == 8) {
+                        Rectangle r = new(pWord(), pWord(), pWord(), pWord());
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.FillRectangle(GraphicsState.CurrentBrush, r);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+                case GCommandCode.gcDrawFillRectXYWH:
+                    if (paramByteCount == 8) {
+                        Rectangle r = new(pWord(), pWord(), pWord(), pWord());
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            //var rFill = r;
+                            //rFill.Inflate(-5, -5);
+                            //GraphicsState.CurrentPen = new Pen(Color.YellowGreen, 5);
+                            //GraphicsState.CurrentPen.Width = 5;
+                            //GraphicsState.CurrentPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                            //GraphicsState.CurrentPen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+                            //GraphicsState.CurrentBrush = Brushes.Red;
+                            g?.DrawRectangle(GraphicsState.CurrentPen, r);
+                            g?.FillRectangle(GraphicsState.CurrentBrush, r);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+                case GCommandCode.gcSetPen:
+                    if (paramByteCount == 2) {
+                        var penColor = pColor();
+                        var strokeWidth = pByte();
+                        GraphicsState.CurrentPen = new Pen(penColor, strokeWidth);
+                        GraphicsState.CurrentPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                        GraphicsState.CurrentPen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+                    }
+                    break;
+                case GCommandCode.gcSetBrush:
+                    if (paramByteCount == 1) {
+                        var brushColor = pColor();
+                        GraphicsState.CurrentBrush = new SolidBrush(brushColor);
                     }
                     break;
                 default:
