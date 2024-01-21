@@ -118,6 +118,14 @@ internal class GraphicsCommand {
     internal int paramByteCount = 0;
     internal byte[]? paramBytes;
     internal int paramIx = 0;
+    private const int pRectSize = 8;
+    private const int pPenSize = 4;
+    private const int pBrushSize = 1;
+    private const int pPointSize = 4;
+    private const int pColorSize = 1;
+    private const int pRadiusSize = 2;
+    private const int pAngleSize = 2;
+    private const int pCornerRadiusSize = 2;
 
     internal void PerformCommand(Bitmap destinationBitmap) {
         try {
@@ -128,32 +136,30 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcClearScreenColor: //clear screen
-                    if (paramByteCount == 1) {
+                    if (paramByteCount == pColorSize) {
                         destinationBitmap.Clear(pColor());
                     }
                     break;
                 case GCommandCode.gcDrawPixelXY: //set pixel to current pen color
-                    if (paramByteCount == 4) {
+                    if (paramByteCount == pPointSize) {
                         var point = pPoint();
-                        var c = GraphicsState.CurrentPen.Color;
-                        destinationBitmap.SetPixel(point.X, point.Y, c);
+                        destinationBitmap.SetPixel(point.X, point.Y, GraphicsState.CurrentPen.Color);
                     }
                     break;
                 case GCommandCode.gcDrawPixelXYColor: //set pixel
-                    if (paramByteCount == 5) {
+                    if (paramByteCount == pPointSize + pColorSize) {
                         var point = pPoint();
-                        var c = pColor();
-                        destinationBitmap.SetPixel(point.X, point.Y, c);
+                        destinationBitmap.SetPixel(point.X, point.Y, pColor());
                     }
                     break;
                 case GCommandCode.gcDrawLineX1Y1X2Y2:
-                    if (paramByteCount == 8) {
-                        Point point1 = pPoint();
-                        Point point2 = pPoint();
+                    if (paramByteCount == 2 * pPointSize) {
+                        var point1 = pPoint();
+                        var point2 = pPoint();
                         Graphics? g = null;
                         try {
                             g = Graphics.FromImage(destinationBitmap);
-                            g?.DrawLine(GraphicsState.CurrentPen, point1, point2);
+                            g.DrawLine(GraphicsState.CurrentPen, point1, point2);
                         } catch (Exception) {
                             //throw;
                         } finally {
@@ -162,9 +168,9 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawLineX1Y1X2Y2ColorStrokeWidthRounded:
-                    if (paramByteCount == 12) {
-                        Point point1 = pPoint();
-                        Point point2 = pPoint();
+                    if (paramByteCount ==  2 * pPointSize + pPenSize) {
+                        var point1 = pPoint();
+                        var point2 = pPoint();
                         var pen = pPen();
                         Graphics? g = null;
                         try {
@@ -176,29 +182,28 @@ internal class GraphicsCommand {
                             g?.Dispose();
                         }
                     }
-                    //throw new NotImplementedException();
                     break;
                 case GCommandCode.gcDrawLineXYRTheta:
-                    if (paramByteCount == 8) {
-                        Point point1 = pPoint();
+                    if (paramByteCount == pPointSize + pRadiusSize + pAngleSize) {
+                        var point1 = pPoint();
                         var radius = pWord();
                         var theta = pRadians();
                         DrawLineRTheta(destinationBitmap, point1, radius, theta, GraphicsState.CurrentPen);
                     }
                     break;
                 case GCommandCode.gcDrawLineXYRThetaColorStrokeWidthRounded:
-                    if (paramByteCount == 11) {
-                        Point point1 = new(pWord(), pWord());
+                    if (paramByteCount == pPointSize + pRadiusSize + pAngleSize + pPenSize) {
+                        var point1 = pPoint();
                         var radius = pWord();
                         var theta = pRadians();
                         var pen = pPen();
                         DrawLineRTheta(destinationBitmap, point1, radius, theta, pen);
                     }
-                    //throw new NotImplementedException();
                     break;
+
                 case GCommandCode.gcDrawRectXYWH:
-                    if (paramByteCount == 8) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize) {
+                        var rect = pRect();
                         Graphics? g = null;
                         try {
                             g = Graphics.FromImage(destinationBitmap);
@@ -211,8 +216,8 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawRectXYWHColorStrokeWidthRounded:
-                    if (paramByteCount == 12) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize + pPenSize) {
+                        var rect = pRect();
                         var pen = pPen();
                         Graphics? g = null;
                         try {
@@ -226,7 +231,7 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcFillRectXYWH:
-                    if (paramByteCount == 8) {
+                    if (paramByteCount == pRectSize) {
                         Rectangle rect = pRect();
                         Graphics? g = null;
                         try {
@@ -240,8 +245,8 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcFillRectXYWHColor:
-                    if (paramByteCount == 9) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize + pBrushSize) {
+                        var rect = pRect();
                         var brush = pBrush();
                         Graphics? g = null;
                         try {
@@ -255,8 +260,8 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawFillRectXYWH:
-                    if (paramByteCount == 8) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize) {
+                        var rect = pRect();
                         Graphics? g = null;
                         try {
                             g = Graphics.FromImage(destinationBitmap);
@@ -270,8 +275,8 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawFillRectXYWHColorStrokeWidthRounded:
-                    if (paramByteCount == 12) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize + pPenSize) {
+                        var rect = pRect();
                         var pen = pPen();
                         Graphics? g = null;
                         try {
@@ -286,8 +291,8 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawFillRectXYWHFillColor:
-                    if (paramByteCount == 9) {
-                        Rectangle rect = pRect();
+                    if (paramByteCount == pRectSize + pBrushSize) {
+                        var rect = pRect();
                         var brush = pBrush();
                         Graphics? g = null;
                         try {
@@ -302,7 +307,7 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcDrawFillRectXYWHColorStrokeWidthRoundedFillColor:
-                    if (paramByteCount == 13) {
+                    if (paramByteCount == pRectSize + pPenSize + pBrushSize) {
                         var rect = pRect();
                         var pen = pPen();
                         var brush = pBrush();
@@ -319,120 +324,498 @@ internal class GraphicsCommand {
                     }
                     break;
                 case GCommandCode.gcSetPenColorStrokeWidthRounded:
-                    if (paramByteCount == 4) {
+                    if (paramByteCount == pPenSize) {
                         GraphicsState.CurrentPen = pPen();
                     }
                     break;
                 case GCommandCode.gcSetBrushColor:
-                    if (paramByteCount == 1) {
+                    if (paramByteCount == pBrushSize) {
                         GraphicsState.CurrentBrush = pBrush();
                     }
                     break;
                 case GCommandCode.gcDrawPointXY:
                     //draw a point (diameter = pen.strokewidth) (not necessarily a single pixel!)
-                    if (paramByteCount == 4) {
-                        Point point = pPoint();
+                    if (paramByteCount == pPointSize) {
+                        var point = pPoint();
                         Graphics? g = null;
                         try {
                             g = Graphics.FromImage(destinationBitmap);
-                            //TODO: verify this draws nothing and draw a rectangle[x,y,1,1];
-                            g?.DrawLine(GraphicsState.CurrentPen, point, point); //note: assuming a zero length line draws a point, not nothing
+                            //g?.DrawLine(GraphicsState.CurrentPen, point, point); //note: this assumes a zero length line draws a point, not nothing
+                            var rect = new Rectangle(point, new Size(1, 1));
+                            g?.DrawRectangle(GraphicsState.CurrentPen, rect);
                         } catch (Exception) {
                             //throw;
                         } finally {
                             g?.Dispose();
                         }
                     }
-                    //throw new NotImplementedException();
                     break;
                 case GCommandCode.gcDrawPointXYColorStrokeWidthRounded:
-                    if (paramByteCount == 8) {
-                        Point point = new(pWord(), pWord());
-                        var color = pColor();
-                        var lineWidth = pWord();
-                        var rounded = pByte() > 0;
+                    if (paramByteCount == pPointSize + pPenSize) {
+                        var point = pPoint();
+                        var pen = pPen();
                         Graphics? g = null;
                         try {
                             g = Graphics.FromImage(destinationBitmap);
-                            //var rFill = r;
-                            //rFill.Inflate(-5, -5);
-                            //GraphicsState.CurrentPen = new Pen(Color.YellowGreen, 5);
-                            //GraphicsState.CurrentPen.Width = 5;
-                            //GraphicsState.CurrentPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-                            //GraphicsState.CurrentPen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
-                            //GraphicsState.CurrentBrush = Brushes.Red;
-                            var pen = new Pen(color, lineWidth);
-                            if (rounded) {
-                                pen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
-                                pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
-                                pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
-                            }
-                            var p2 = point;
-                            p2.X += 1;
-                            p2.Y += 1;
-                            g?.DrawLine(pen, point, p2); //note: assuming a zero length line draws a point, not nothing
+                            var rect = new Rectangle(point, new Size(1, 1));
+                            g?.DrawRectangle(pen, rect);
                         } catch (Exception) {
                             //throw;
                         } finally {
                             g?.Dispose();
                         }
                     }
-                    //throw new NotImplementedException();
                     break;
+
                 case GCommandCode.gcDrawRoundedRectXYWHCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(GraphicsState.CurrentPen, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawRoundedRectXYWHColorStrokeWidthCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(pen, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillRoundedRectXYWHCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.FillRoundedRectangle(GraphicsState.CurrentBrush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillRoundedRectXYWHColorCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pBrushSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var brush = pBrush();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.FillRoundedRectangle(brush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillRoundedRectXYWHCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(GraphicsState.CurrentPen, rect, cornerRadius); //note: this draws border OUTSIDE of rectangle coords
+                            g?.FillRoundedRectangle(GraphicsState.CurrentBrush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillRoundedRectXYWHColorStrokeWidthCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(pen, rect, cornerRadius); //note: this draws border OUTSIDE of rectangle coords
+                            g?.FillRoundedRectangle(GraphicsState.CurrentBrush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillRoundedRectXYWHFillColorCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pBrushSize + pCornerRadiusSize) {
+                        Rectangle rect = pRect();
+                        var brush = pBrush();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(GraphicsState.CurrentPen, rect, cornerRadius); //note: this draws border OUTSIDE of rectangle coords
+                            g?.FillRoundedRectangle(brush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillRoundedRectXYWHColorStrokeWidthFillColorCornerRadius:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize + pBrushSize + pCornerRadiusSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        var brush = pBrush();
+                        var cornerRadius = pWord();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g?.DrawRoundedRectangle(pen, rect, cornerRadius); //note: this draws border OUTSIDE of rectangle coords
+                            g?.FillRoundedRectangle(brush, rect, cornerRadius);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+
                 case GCommandCode.gcDrawCircleXYR:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawCircleXYRColorStrokeWidth:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize + pPenSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        var pen = pPen();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillCircleXYR:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize) {
+                        Point point1 = pPoint();
+                        var radius = pWord();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillCircleXYRColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize + pBrushSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        var brush = pBrush();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillCircleXYR:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillCircleXYRColorStrokeWidth:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize + pPenSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        var pen = pPen();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillCircleXYRFillColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize + pBrushSize) {
+                        Point point1 = pPoint();
+                        var radius = pWord();
+                        var brush = pBrush();
+                        Rectangle rect = new();
+                        rect.X = point1.X - radius;
+                        rect.Y = point1.Y - radius;
+                        rect.Width = 2 * radius;
+                        rect.Height = 2 * radius;
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillCircleXYRColorStrokeWidthFillColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize + pRadiusSize + pPenSize + pBrushSize) {
+                        var point1 = pPoint();
+                        var radius = pWord();
+                        var pen = pPen();
+                        var brush = pBrush();
+                        Rectangle rect = new() {
+                            X = point1.X - radius,
+                            Y = point1.Y - radius,
+                            Width = 2 * radius,
+                            Height = 2 * radius
+                        };
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+                
                 case GCommandCode.gcDrawEllipseXYWH:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize) {
+                        var rect = pRect();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawEllipseXYWHColorStrokeWidthRounded:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillEllipseXYWH:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize) {
+                        var rect = pRect();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcFillEllipseXYWHColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pBrushSize) {
+                        var rect = pRect();
+                        var brush = pBrush();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillEllipseXYWH:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize) {
+                        var rect = pRect();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillEllipseXYWHColorStrokeWidthRounded:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                            g.FillEllipse(GraphicsState.CurrentBrush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillEllipseXYWHFillColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pBrushSize) {
+                        var rect = pRect();
+                        var brush = pBrush();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(GraphicsState.CurrentPen, rect);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
                 case GCommandCode.gcDrawFillEllipseXYWHColorStrokeWidthRoundedFillColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pRectSize + pPenSize + pBrushSize) {
+                        var rect = pRect();
+                        var pen = pPen();
+                        var brush = pBrush();
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawEllipse(pen, rect);
+                            g.FillEllipse(brush, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+
                 case GCommandCode.gcSetForegroundColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pColorSize) {
+                        GraphicsState.ForegroundColor = pColor();
+                    }
+                    break;
                 case GCommandCode.gcSetBackgroundColor:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pColorSize) {
+                        GraphicsState.BackgroundColor = pColor();
+                    }
+                    break;
                 case GCommandCode.gcSetScreenDimensionsWH:
-                    throw new NotImplementedException(); // break;
+                    if (paramByteCount == pPointSize) {
+                        var DisplaySize = (Size)pPoint();
+                        GraphicsState.DisplaySize = DisplaySize;
+                    }
+                    break;
                 case GCommandCode.gcSetZoom:
                     throw new NotImplementedException(); // break;
                 case GCommandCode.gcScrollRegionXYWHdXdY:
@@ -440,7 +823,27 @@ internal class GraphicsCommand {
                 case GCommandCode.gcScrollScreendXdY:
                     throw new NotImplementedException(); // break;
                 case GCommandCode.gcDrawText:
-                    throw new NotImplementedException(); // break;
+                    //draw string using placement+wrap+clip parameters.  Use current brush+font+attributes.
+                    var minBytes = pRectSize + 1 + 1 + 2;
+                    if (paramByteCount >= minBytes) {
+                        var rect = pRect();
+                        var wrapped = pByte() > 0;
+                        var clipped = pByte() > 0;
+                        var str = pString();
+                        var font = GraphicsState.CurrentFont;
+                        Graphics? g = null;
+                        try {
+                            g = Graphics.FromImage(destinationBitmap);
+                            g.DrawString(str, font, GraphicsState.CurrentBrush, rect);
+                            //g.DrawString("Hello", SystemFonts.DefaultFont, Brushes.Red, rect);
+                        } catch (Exception) {
+                            //throw;
+                        } finally {
+                            g?.Dispose();
+                        }
+                    }
+                    break;
+                    //throw new NotImplementedException(); // break;
                 default:
                     break;
             }
@@ -481,7 +884,8 @@ internal class GraphicsCommand {
     internal int pWord() => paramBytes[paramIx++] | paramBytes[paramIx++] << 8;
     internal byte pByte() => paramBytes[paramIx++];
     internal Color pColor() {
-        var rawC = pByte();
+        var rawC = (int)pByte();
+        //return Color.FromArgb(rawC / 36 * 255 / 6, rawC / 6 % 6 * 255 / 6, rawC % 6 * 255 / 6);
         return Color.FromArgb(rawC / 36 * 255 / 6, rawC / 6 % 6 * 255 / 6, rawC % 6 * 255 / 6);
     }
     internal Pen pPen() {
@@ -512,6 +916,16 @@ internal class GraphicsCommand {
 
     internal double pRadians() {
         return WordToRadians(pWord());
+    }
+
+    internal string pString() {
+        var rslt = "";
+        var strLen = pWord();
+        for (var i = 0; i < strLen; i++) {
+            var c = (char)pByte();
+            rslt += c;
+        }
+        return rslt;
     }
     internal static Color ToColor(byte remoteColor) {
         return Color.FromArgb(remoteColor / 36 * 255 / 6, remoteColor / 6 % 6 * 255 / 6, remoteColor % 6 * 255 / 6);

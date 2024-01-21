@@ -14,8 +14,8 @@ internal class GraphicsState {
     //internal Color TextBGColor = Color.Black;
     internal static Pen CurrentPen = Pens.White;
     internal static Brush CurrentBrush = Brushes.White;
-    internal static int DisplayWidth;
-    internal static int displayHeight;
+    internal static Size DisplaySize;
+    internal static Font CurrentFont = new(FontFamily.GenericMonospace, 12.0f, FontStyle.Regular);
 
 
     //internal static int PixelWidth; //future: with integral zoom in
